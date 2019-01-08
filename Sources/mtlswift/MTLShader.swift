@@ -5,6 +5,14 @@
 //  Created by Andrey Volodin on 08/01/2019.
 //
 
+extension String {
+    var capitalizingFirstLetter: String {
+        guard !self.isEmpty else { return self }
+        
+        return String(self.first!).uppercased() + String(self.dropFirst())
+    }
+}
+
 public struct MTLShader {
     public enum Kind {
         case kernel, fragment, vertex
@@ -44,7 +52,7 @@ public struct MTLShader {
             return
         }
         
-        builder.add(line:"public class \(name)Encoder {")
+        builder.add(line:"public class \(name.capitalizingFirstLetter)Encoder {")
         builder.pushLevel()
         builder.add(line: "fileprivate let pipelineState: MTLComputePipelineState")
         
@@ -66,7 +74,6 @@ public struct MTLShader {
                 builder.add(line: "public var \(parameter.name)Offset: Int = 0")
             default: continue
             }
-            
         }
         
         builder.add(line: "")
@@ -107,5 +114,7 @@ public struct MTLShader {
         
         builder.popLevel()
         builder.add(line: "}")
+        
+        builder.add(line: "")
     }
 }

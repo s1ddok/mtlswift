@@ -134,7 +134,7 @@ do {
                              encoding: .utf8)
     
     let unit =
-        try TranslationUnit(clangSource: String(contentsOfFile: "/Users/avolodin/Documents/Shaders.metal"),
+        try TranslationUnit(clangSource: String(contentsOfFile: path),
                             language: .cPlusPlus,
                             index: Index(excludeDeclarationsFromPCH: false,
                                          displayDiagnostics: false),

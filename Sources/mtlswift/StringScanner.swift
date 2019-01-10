@@ -78,6 +78,29 @@ public class StringScanner {
         return nil
     }
     
+    public func readTextAttribute() -> String? {
+        let regex = try! NSRegularExpression(pattern: "^Text=\"(.*)\"", options: [])
+        
+        if let match = regex.firstMatch(in: self.string,
+                                        options: [],
+                                        range: self.leftRange) {
+            self.offset += match.range.length
+            
+            return self.stringFromLeftString(in: match.range(at: 1))
+        }
+        
+        return nil
+    }
+    
+    public func skip(exact: String) -> Bool {
+        if self.string.dropFirst(self.offset).hasPrefix(exact) {
+            self.offset += exact.count
+            return true
+        }
+        
+        return false
+    }
+    
     public var leftString: String {
         return String(self.string[self.string.index(self.string.startIndex, offsetBy: self.offset)...])
     }

@@ -18,8 +18,10 @@ public class ASTNode {
     
     public var contentType: ContentType
     
-    public var name: String = ""
-    public var integerValue = 0
+    public var model: Any? = nil
+    
+    public var stringValue: String? = nil
+    public var integerValue: Int? = nil
     
     public init(parsingString inputString: String) throws {
         
@@ -40,7 +42,7 @@ public class ASTNode {
             scanner.skipUsedStatement()
             scanner.skipWhiteSpaces()
             
-            self.name = scanner.readWordIfAny() ?? "_"
+            self.stringValue = scanner.readWordIfAny()
         case .integerLiteral:
             scanner.skipWhiteSpaces()
             scanner.skipHexIfAny()
@@ -55,6 +57,16 @@ public class ASTNode {
             }
             
             self.integerValue = value
+        case .textComment:
+            scanner.skipWhiteSpaces()
+            scanner.skipHexIfAny()
+            scanner.skipWhiteSpaces()
+            scanner.skipSlocIfAny()
+            scanner.skipWhiteSpaces()
+            
+            if let text = scanner.readTextAttribute() {
+                self.stringValue = text
+            }
         default: return
         }
     }
@@ -98,14 +110,17 @@ public class ASTNode {
                 kind = .buffer
             } else if pn.hasChildren(of: .metalStageInAttr) {
                 kind = .stageIn
-            } else if pn.hasChildren(of: [.metalThreadPosGridAttr]) { // TODO: add all
+            } else if pn.hasChildren(of: [.metalThreadPosGridAttr,
+                                          .metalThreadPosGroupAttr,
+                                          .metalThreadsPerGroupAttr,
+                                          .metalThreadIndexGroupAttr]) { // TODO: add all
                 kind = .meta
             }
             
             let idx = pn.children(of: [.metalSamplerIndexAttr, .metalTextureIndexAttr, .metalBufferIndexAttr])
-                .first?.children.first!.integerValue
+                .first?.children.first!.integerValue!
             
-            return MTLShader.Parameter(name: pn.name, kind: kind, index: idx)
+            return MTLShader.Parameter(name: pn.stringValue ?? "_", kind: kind, index: idx)
         }
         
         let kind: MTLShader.Kind
@@ -118,7 +133,35 @@ public class ASTNode {
             kind = .vertex
         }
         
-        return MTLShader(name: self.name, kind: kind, parameters: parameters)
+        var declarations: [CustomDeclaration] = []
+        if let fullComment = self.children(of: .fullComment).first {
+            for paragraph in fullComment.children(of: .paragraphComment) {
+                textLoop: for text in paragraph.children(of: .textComment) {
+                    guard let rawString = text.stringValue else {
+                        continue textLoop
+                    }
+                    
+                    let scanner = StringScanner(string: rawString)
+                    scanner.skipWhiteSpaces()
+                        
+                    guard scanner.skip(exact: CustomDeclaration.declarationPrefix),
+                          let declaration = CustomDeclaration(rawString: scanner.leftString) else {
+                        continue textLoop
+                    }
+                    
+                    if case .ignore = declaration {
+                        return nil
+                    }
+                    declarations.append(declaration)
+                }
+            }
+        }
+        
+
+        return MTLShader(name: self.stringValue!,
+                         kind: kind,
+                         parameters: parameters,
+                         customDeclarations: declarations)
     }
     
     public func hasChildren(of type: ContentType) -> Bool {

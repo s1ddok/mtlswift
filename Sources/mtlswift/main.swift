@@ -98,10 +98,14 @@ do {
     
     let topNode = try ASTNode(parsingString: firstLine.1)
     var node = topNode
-    for line in lines.dropFirst().dropLast() {
+    for line in lines.dropFirst() {
         let extractingLevel = line.extractingLevel
         
         while currentLevel >= extractingLevel.0 {
+            // TODO: Do something more clever
+            guard node.parent != nil else {
+                break
+            }
             node = node.parent!
             currentLevel -= 1
         }

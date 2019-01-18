@@ -27,7 +27,7 @@ public class ASTNode {
         
         let scanner = StringScanner(string: inputString)
         
-        guard let prefix = scanner.readWordIfAny() else {
+        guard let prefix = scanner.readWord() else {
             throw Errors.parsingError
         }
         self.contentType = ContentType(rawValue: prefix)!
@@ -42,7 +42,7 @@ public class ASTNode {
             scanner.skipUsedStatement()
             scanner.skipWhiteSpaces()
             
-            self.stringValue = scanner.readWordIfAny()
+            self.stringValue = scanner.readWord()
         case .integerLiteral:
             scanner.skipWhiteSpaces()
             scanner.skipHexIfAny()

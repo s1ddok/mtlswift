@@ -50,8 +50,8 @@ public class StringScanner {
         try! self.skipIfAny(pattern: "used(\\sa)?")
     }
     
-    public func readWordIfAny() -> String? {
-        let regex = try! NSRegularExpression(pattern: "^(\\w+)", options: [])
+    public func read(pattern: String) throws -> String? {
+        let regex = try NSRegularExpression(pattern: pattern, options: [])
         
         if let match = regex.firstMatch(in: self.string,
                                         options: [],
@@ -62,31 +62,42 @@ public class StringScanner {
         }
         
         return nil
+    }
+    
+    public func readWord() -> String? {
+        return try! self.read(pattern: "^(\\w+)")
+    }
+    
+    public func readInt() -> Int? {
+        return Int(try! self.read(pattern:  "^(\\d+)") ?? "")
     }
     
     public func readSingleQuotedTextIfAny() -> String? {
-        let regex = try! NSRegularExpression(pattern: "^'(.*?)'", options: [])
-        
-        if let match = regex.firstMatch(in: self.string,
-                                        options: [],
-                                        range: self.leftRange) {
-            self.offset += match.range.length
-            
-            return self.stringFromLeftString(in: match.range(at: 1))
-        }
-        
-        return nil
+        return try! self.read(pattern: "^'(.*?)'")
     }
     
     public func readTextAttribute() -> String? {
-        let regex = try! NSRegularExpression(pattern: "^Text=\"(.*)\"", options: [])
+        return try! self.read(pattern: "^Text=\"(.*)\"")
+    }
+    
+    public func readXYZ() -> (x: Int, y: Int, z: Int)? {
+        let x = self.readInt()
+        self.skipWhiteSpaces()
+        guard self.skip(exact: ",") else {
+            return nil
+        }
+        self.skipWhiteSpaces()
+        let y = self.readInt()
+        self.skipWhiteSpaces()
+        guard self.skip(exact: ",") else {
+            return nil
+        }
+        self.skipWhiteSpaces()
         
-        if let match = regex.firstMatch(in: self.string,
-                                        options: [],
-                                        range: self.leftRange) {
-            self.offset += match.range.length
-            
-            return self.stringFromLeftString(in: match.range(at: 1))
+        let z = self.readInt()
+        
+        if x != nil && y != nil && z != nil {
+            return (x!, y!, z!)
         }
         
         return nil

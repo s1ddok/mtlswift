@@ -78,10 +78,10 @@ public class ASTNode {
         }
     }
     
-    public func extractMetalShaders() -> [MTLShader] {
+    public func extractMetalShaders() -> [ASTShader] {
         let extractedShaders = self.children.map { $0.tryExtractShader() }
         
-        return extractedShaders.enumerated().flatMap { (offset, element) -> [MTLShader] in
+        return extractedShaders.enumerated().flatMap { (offset, element) -> [ASTShader] in
             if element == nil {
                 return self.children[offset].extractMetalShaders()
             } else {
@@ -90,7 +90,7 @@ public class ASTNode {
         }
     }
     
-    private func tryExtractShader() -> MTLShader? {
+    private func tryExtractShader() -> ASTShader? {
         guard self.contentType == .functionDecl
             && self.hasChildren(of: [.metalKernelAttr, .metalFragmentAttr, .metalVertexAttr])
             else {
@@ -99,8 +99,8 @@ public class ASTNode {
         
         let parameterNode = self.children(of: .parmVarDecl)
         
-        let parameters: [MTLShader.Parameter] = parameterNode.map { pn in
-            var kind: MTLShader.Parameter.Kind = .unknown
+        let parameters: [ASTShader.Parameter] = parameterNode.map { pn in
+            var kind: ASTShader.Parameter.Kind = .unknown
             
             if pn.hasChildren(of: .metalSamplerIndexAttr) {
                 kind = .sampler
@@ -120,10 +120,10 @@ public class ASTNode {
             let idx = pn.children(of: [.metalSamplerIndexAttr, .metalTextureIndexAttr, .metalBufferIndexAttr])
                 .first?.children.first!.integerValue!
             
-            return MTLShader.Parameter(name: pn.stringValue ?? "_", kind: kind, index: idx)
+            return ASTShader.Parameter(name: pn.stringValue ?? "_", kind: kind, index: idx)
         }
         
-        let kind: MTLShader.Kind
+        let kind: ASTShader.Kind
         
         if self.hasChildren(of: .metalKernelAttr) {
             kind = .kernel
@@ -158,7 +158,7 @@ public class ASTNode {
         }
         
 
-        return MTLShader(name: self.stringValue!,
+        return ASTShader(name: self.stringValue!,
                          kind: kind,
                          parameters: parameters,
                          customDeclarations: declarations)

@@ -27,4 +27,12 @@ public class SourceStringBuilder {
     public func add(line: String) {
         result += self.currentIdentation + line + "\n"
     }
+
+    public func blankLine() {
+        result += "\n"
+    }
+
+    public func add(rawString: String) {
+        result += rawString
+    }
 }

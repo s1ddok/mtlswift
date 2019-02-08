@@ -1,0 +1,16 @@
+{
+  "object": {
+    "pins": [
+      {
+        "package": "Clang",
+        "repositoryURL": "https://github.com/s1ddok/ClangSwift",
+        "state": {
+          "branch": "static-lib",
+          "revision": "d083d06ba96ac4e9928c26b4848531cd1e9f7ff2",
+          "version": null
+        }
+      }
+    ]
+  },
+  "version": 1
+}

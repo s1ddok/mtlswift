@@ -107,6 +107,7 @@ public extension ASTNode {
         case namespaceDecl = "NamespaceDecl"
         case noThrowAttr = "NoThrowAttr"
         case nonTypeTemplateParmDecl = "NonTypeTemplateParmDecl"
+        case nullStmnt = "NullStmt"
         case opaqueValueExpr = "OpaqueValueExpr"
         case original = "original"
         case packExpansionExpr = "PackExpansionExpr"

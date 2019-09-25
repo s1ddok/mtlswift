@@ -1,5 +1,3 @@
-import Clang
-import cclang
 import Foundation
 
 do {

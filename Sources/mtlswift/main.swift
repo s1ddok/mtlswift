@@ -58,6 +58,7 @@ public extension String {
 }
 
 do {
+    let start = Date()
     let path = CommandLine.arguments[1]
     
     guard path.hasSuffix(".metal") else {
@@ -71,10 +72,9 @@ do {
     let outputHandle = try FileHandle(forUpdating: astPath)
     let process = Process()
     process.launchPath = which("xcrun")!
-    process.arguments = ["-sdk", "iphoneos",
-                         "metal",
+    process.arguments = ["-sdk", "iphoneos", "metal",
                          "-Xclang", "-ast-dump",
-                         "-Xclang", "-finclude-default-header",
+                         //"-Xclang", "-finclude-default-header",
                          "-E",
                          "-Xclang", "-fno-color-diagnostics",
                          "-fno-color-diagnostics",
@@ -87,10 +87,13 @@ do {
     outputHandle.seek(toFileOffset: 0)
     
     let data = outputHandle.readDataToEndOfFile()
-    
-    guard let result = String(data: data, encoding: .utf8)?
+
+    guard
+        let result = String(data: data, encoding: .utf8)?
         .trimmingCharacters(in: .whitespacesAndNewlines),
-        !result.isEmpty else { throw "" }
+        !result.isEmpty
+    else { throw "" }
+
     let lines = result.components(separatedBy: .newlines)
     
     let firstLine = lines.first!.extractingLevel
@@ -98,8 +101,17 @@ do {
     
     let topNode = try ASTNode(parsingString: firstLine.1)
     var node = topNode
+
+    var isInsideSystemArea = true
+
+    print("Finished dumping in \(Date().timeIntervalSince(start))")
+
     for line in lines.dropFirst() {
         let extractingLevel = line.extractingLevel
+
+        guard !isInsideSystemArea || extractingLevel.0 <= 1 else {
+            continue
+        }
         
         while currentLevel >= extractingLevel.0 {
             // TODO: Do something more clever
@@ -117,11 +129,22 @@ do {
         let newChild = try ASTNode(parsingString: extractingLevel.1)
         newChild.parent = node
         node.children.append(newChild)
-        node = newChild
-        currentLevel = extractingLevel.0
+
+        if case .namespaceDecl = newChild.contentType,
+           newChild.stringValue == "mtlswift" {
+            isInsideSystemArea = false
+        }
+
+        if !isInsideSystemArea {
+            node = newChild
+            currentLevel = extractingLevel.0
+        }
     }
-    
-    let shaders = topNode.extractMetalShaders()
+
+    print("Finished parsing in \(Date().timeIntervalSince(start))")
+
+    let constants = topNode.extractMetalFunctionConstants()
+    let shaders = topNode.extractMetalShaders(constants: constants)
     
     let builder = SourceStringBuilder()
     builder.begin()
@@ -137,25 +160,9 @@ do {
     try builder.result.write(to: filepath,
                              atomically: true,
                              encoding: .utf8)
-    
-    let unit =
-        try TranslationUnit(clangSource: String(contentsOfFile: path),
-                            language: .cPlusPlus,
-                            index: Index(excludeDeclarationsFromPCH: false,
-                                         displayDiagnostics: false),
-                            commandLineArgs: [],
-                            options: [.skipFunctionBodies, .keepGoing])
 
-    let commentTokens = unit.tokens(in: unit.cursor.range).enumerated()
-                            .filter { $0.1 is CommentToken }
-    
-    let directiveTokens = commentTokens.filter { (arg: (offset: Int, element: Token)) -> Bool in
-        return arg.element.spelling(in: unit).contains("mtlswift")
-    }
-    
-    let sourceLocations = directiveTokens.map { $0.1 }.map { $0.location(in: unit).line }
-    print(sourceLocations)
-    
+
+    print("Finished in \(Date().timeIntervalSince(start))")
 } catch {
     print(error.localizedDescription)
 }

@@ -16,5 +16,5 @@ public enum DispatchType {
     case none
     case even(parameters: DispatchParameters)
     case exact(parameters: DispatchParameters)
-
+    case optimal(branchConstantIndex: Int, parameters: DispatchParameters)
 }

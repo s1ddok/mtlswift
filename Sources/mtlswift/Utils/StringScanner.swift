@@ -39,15 +39,22 @@ public class StringScanner {
     }
     
     public func skipHexIfAny() {
-        try! self.skipIfAny(pattern: "^*0[xX][0-9a-fA-F]+")
+        try! self.skipIfAny(pattern: "0[xX][0-9a-fA-F]+")
     }
-    
+
     public func skipSlocIfAny() {
-        try! self.skipIfAny(pattern: "((<<invalid sloc>>|<invalid sloc>|<(\"?/?.*?)(:\\d+)+(,\\s((\"?/?.*?)(:\\d+)+))*>)\\s*)+((line|col)(:\\d+)+)?")
+        try! self.skipIfAny(pattern: "((<<invalid sloc>>|" +
+            "<invalid sloc>|" +
+            "<(\"?/?.*?)(:\\d+)+(,\\s((\"?/?.*?)(:\\d+)+))*>)\\s*)+" +
+            "((line|col)(:\\d+)+)?")
     }
     
     public func skipUsedStatement() {
-        try! self.skipIfAny(pattern: "used(\\sa)?")
+        try! self.skipIfAny(pattern: "used(\\sa\\s)?")
+    }
+
+    public func skipInvalidStatement() {
+        try! self.skipIfAny(pattern: "invalid(\\sa\\s)?")
     }
     
     public func read(pattern: String) throws -> String? {
@@ -63,6 +70,14 @@ public class StringScanner {
         
         return nil
     }
+
+    public func readAll(pattern: String) throws -> [String] {
+        let regex = try NSRegularExpression(pattern: pattern, options: [])
+
+        let matches = regex.matches(in: self.string, options: [], range: self.leftRange)
+
+        return matches.map { self.stringFromLeftString(in: $0.range(at: 0)) }
+    }
     
     public func readWord() -> String? {
         return try! self.read(pattern: "^(\\w+)")
@@ -74,6 +89,10 @@ public class StringScanner {
     
     public func readSingleQuotedTextIfAny() -> String? {
         return try! self.read(pattern: "^'(.*?)'")
+    }
+
+    public func readBracketedInt() -> Int? {
+        return try! Int(self.read(pattern: "^\\((\\d+)\\)") ?? "")
     }
     
     public func readTextAttribute() -> String? {

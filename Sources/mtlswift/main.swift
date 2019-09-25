@@ -2,167 +2,34 @@ import Clang
 import cclang
 import Foundation
 
-/// Runs the specified program at the provided path.
-/// - parameter path: The full path of the executable you
-///                   wish to run.
-/// - parameter args: The arguments you wish to pass to the
-///                   process.
-/// - returns: The standard output of the process, or nil if it was empty.
-func run(_ path: String, args: [String] = []) -> String? {
-    let pipe = Pipe()
-    let process = Process()
-    process.launchPath = path
-    process.arguments = args
-    process.standardOutput = pipe
-    process.launch()
-    process.waitUntilExit()
-    
-    let data = pipe.fileHandleForReading.readDataToEndOfFile()
-    guard let result = String(data: data, encoding: .utf8)?
-        .trimmingCharacters(in: .whitespacesAndNewlines),
-        !result.isEmpty else { return nil }
-    return result
-}
-
-/// Finds the location of the provided binary on your system.
-func which(_ name: String) -> String? {
-    return run("/usr/bin/which", args: [name])
-}
-
-extension String: Error {
-    /// Replaces all occurrences of characters in the provided set with
-    /// the provided string.
-    func replacing(charactersIn characterSet: CharacterSet,
-                   with separator: String) -> String {
-        let components = self.components(separatedBy: characterSet)
-        return components.joined(separator: separator)
-    }
-}
-
-public extension String {
-    var extractingLevel: (Int, String) {
-        var level = 0
-        var trimmedSelf = self
-        while true {
-            if ["|-", "`-", "| ", "  "].contains(where: { trimmedSelf.hasPrefix($0) }) {
-                trimmedSelf.removeFirst(2)
-                level += 1
-                continue
-            }
-            
-            break
-        }
-        
-        return (level, trimmedSelf)
-    }
-}
-
 do {
     let start = Date()
     let path = CommandLine.arguments[1]
-    
-    guard path.hasSuffix(".metal") else {
-        throw "You have to provide metal files"
+
+    guard let url = URL(string: path) else {
+        throw "Passed string is not a valid URL"
     }
 
-    let astPath = URL(fileURLWithPath: CommandLine.arguments[1]).deletingLastPathComponent().appendingPathComponent("ast").appendingPathExtension("dump")
-    
-    _ = run(which("rm")!, args: [astPath.path])
-    _ = run(which("touch")!, args: [astPath.path])
-    let outputHandle = try FileHandle(forUpdating: astPath)
-    let process = Process()
-    process.launchPath = which("xcrun")!
-    process.arguments = ["-sdk", "iphoneos", "metal",
-                         "-Xclang", "-ast-dump",
-                         //"-Xclang", "-finclude-default-header",
-                         "-E",
-                         "-Xclang", "-fno-color-diagnostics",
-                         "-fno-color-diagnostics",
-                         path]
-    process.standardOutput = outputHandle
-    process.launch()
-    process.waitUntilExit()
-    
-    outputHandle.synchronizeFile()
-    outputHandle.seek(toFileOffset: 0)
-    
-    let data = outputHandle.readDataToEndOfFile()
+    let shaderGenerator = ShaderGenerator()
 
-    guard
-        let result = String(data: data, encoding: .utf8)?
-        .trimmingCharacters(in: .whitespacesAndNewlines),
-        !result.isEmpty
-    else { throw "" }
-
-    let lines = result.components(separatedBy: .newlines)
-    
-    let firstLine = lines.first!.extractingLevel
-    var currentLevel = firstLine.0
-    
-    let topNode = try ASTNode(parsingString: firstLine.1)
-    var node = topNode
-
-    var isInsideSystemArea = true
-
-    print("Finished dumping in \(Date().timeIntervalSince(start))")
-
-    for line in lines.dropFirst() {
-        let extractingLevel = line.extractingLevel
-
-        guard !isInsideSystemArea || extractingLevel.0 <= 1 else {
-            continue
+    if url.pathExtension == "metal" {
+        try shaderGenerator.generateShaders(for: URL(fileURLWithPath: url.absoluteString))
+    } else {
+        guard let enumerator = FileManager.default.enumerator(atPath: path) else {
+            throw "Couldn't access niether file nor directory at \(path)"
         }
-        
-        while currentLevel >= extractingLevel.0 {
-            // TODO: Do something more clever
-            guard node.parent != nil else {
-                break
+
+        while let metalFile = enumerator.nextObject() as? NSString {
+            if metalFile.hasSuffix("metal") {
+                let metalFileURL = URL(fileURLWithPath: url.path + "/" + (metalFile as String))
+                try shaderGenerator.generateShaders(for: metalFileURL)
             }
-            node = node.parent!
-            currentLevel -= 1
-        }
-        
-        guard extractingLevel.1 != "<<<NULL>>>" else {
-            continue
-        }
-        
-        let newChild = try ASTNode(parsingString: extractingLevel.1)
-        newChild.parent = node
-        node.children.append(newChild)
-
-        if case .namespaceDecl = newChild.contentType,
-           newChild.stringValue == "mtlswift" {
-            isInsideSystemArea = false
-        }
-
-        if !isInsideSystemArea {
-            node = newChild
-            currentLevel = extractingLevel.0
         }
     }
-
-    print("Finished parsing in \(Date().timeIntervalSince(start))")
-
-    let constants = topNode.extractMetalFunctionConstants()
-    let shaders = topNode.extractMetalShaders(constants: constants)
-    
-    let builder = SourceStringBuilder()
-    builder.begin()
-    builder.add(line: "// This file is autogenerated, do not edit it")
-    builder.add(line: "import Alloy")
-    builder.blankLine()
-    for shader in shaders.filter({ $0.kind == .kernel }) {
-        builder.add(rawString: shader.kernelEncoder()!.shaderString)
-        builder.blankLine()
-    }
-    
-    let filepath = URL(fileURLWithPath: CommandLine.arguments[1]).appendingPathExtension("swift")
-    try builder.result.write(to: filepath,
-                             atomically: true,
-                             encoding: .utf8)
-
 
     print("Finished in \(Date().timeIntervalSince(start))")
+
+    RunLoop.main.run()
 } catch {
     print(error.localizedDescription)
 }

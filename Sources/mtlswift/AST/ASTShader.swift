@@ -20,7 +20,7 @@ public struct ASTShader {
     
     public struct Parameter {
         public enum Kind {
-            case buffer, texture, sampler, meta, stageIn, unknown
+            case buffer, texture, sampler, threadgroupMemory, meta, stageIn, unknown
         }
         
         public var name: String
@@ -36,6 +36,7 @@ public struct ASTShader {
     public var kind: Kind
     public var parameters: [Parameter]
     public var customDeclarations: [CustomDeclaration]
+    public var usedConstants: [ASTFunctionConstant]
     
     public var description: String {
         return """
@@ -76,6 +77,7 @@ public struct ASTShader {
 
         // individual access levels are not supported for now
         // use global instead
+        var threadgroupMemoryCalculatiosn: [MTLKernelEncoder.ThreadgroupMemoryLengthCalculation] = []
         let parameters = self.parameters.compactMap { p -> MTLKernelEncoder.Parameter? in
             switch p.kind {
             case .sampler:
@@ -85,36 +87,64 @@ public struct ASTShader {
                 }
 
                 return MTLKernelEncoder.Parameter(name: name,
-                                                  accessLevel: accessLevel,
                                                   swiftTypeName: "MTLSamplerState",
                                                   kind: .sampler,
                                                   index: p.index ?? -1,
-                                                  isForceUnwrappedOptional: true,
                                                   defaultValueString: nil)
             case .texture:
                 let name = swiftNameLookup[p.name, default: p.name]
-                if let type = swiftTypeLookup[p.name] {
+                var type = swiftTypeLookup[p.name] ?? "MTLTexture"
+
+                if type != "MTLTexture" && type != "MTLTexture?" {
                     print("WARNING: Swift Types are not available for texture parameters, ignoring \(type)")
+                    type = "MTLTexture"
                 }
 
                 return MTLKernelEncoder.Parameter(name: name,
-                                                  accessLevel: accessLevel,
-                                                  swiftTypeName: "MTLTexture",
+                                                  swiftTypeName: type,
                                                   kind: .texture,
                                                   index: p.index ?? -1,
-                                                  isForceUnwrappedOptional: true,
                                                   defaultValueString: nil)
             case .buffer:
                 let name = swiftNameLookup[p.name, default: p.name]
                 let type = swiftTypeLookup[p.name, default: "MTLBuffer"]
 
                 return MTLKernelEncoder.Parameter(name: name,
-                                                  accessLevel: accessLevel,
                                                   swiftTypeName: type,
                                                   kind: .buffer,
                                                   index: p.index ?? -1,
-                                                  isForceUnwrappedOptional: true,
                                                   defaultValueString: nil)
+            case .threadgroupMemory:
+                let name = swiftNameLookup[p.name, default: p.name]
+                let correspondingSetting: ThreadgroupMemoryLength = self.customDeclarations.lazy.compactMap {
+                    if case .threadgroupMemory(p.index, let setup) = $0 {
+                        return setup
+                    }
+                    return nil
+                }.first ?? .providedTotal
+
+                switch correspondingSetting {
+                case .providedTotal:
+                    return MTLKernelEncoder.Parameter(name: name + "TotalLength",
+                                                      swiftTypeName: "Int",
+                                                      kind: .threadgroupMemory,
+                                                      index: p.index ?? -1)
+                case .providedPerThread:
+                    let parameterName = name + "PerThreadLength"
+                    threadgroupMemoryCalculatiosn.append(.parameterPerThread(index: p.index ?? -1, parameterName: parameterName))
+                    return MTLKernelEncoder.Parameter(name: parameterName,
+                                                      swiftTypeName: "Int",
+                                                      kind: .threadgroupMemory,
+                                                      index: p.index ?? -1)
+                case .total(let bytes):
+                    // side effect of this closure
+                    threadgroupMemoryCalculatiosn.append(.total(index: p.index ?? -1, bytes: bytes))
+                    return nil
+                case .thread(let bytes):
+                    // side effect of this closure
+                    threadgroupMemoryCalculatiosn.append(.perThread(index: p.index ?? -1, bytes: bytes))
+                    return nil
+                }
             default:
                 if let type = swiftTypeLookup[p.name] {
                     print("WARNING: Swift Types are only available for buffer parameters, ignoring \(type)")
@@ -128,6 +158,16 @@ public struct ASTShader {
             if case .dispatchType(_) = d { return true } else { return false }
         }) ?? .dispatchType(type: .none)
 
+        var branchingConstant: ASTFunctionConstant? = nil
+        var constants = self.usedConstants
+        if case .dispatchType(type: .optimal(let index, _)) = dispatchDeclaration {
+            branchingConstant = self.usedConstants.first { $0.index == index }
+
+            // TODO: check that constant is used and it is bool
+
+            constants.removeAll { $0.index == index }
+        }
+
         let threadgroupDeclaration = customDeclarations.first(of: .threadgroupSize(size: .provided)) ?? .threadgroupSize(size: .max)
 
         if case .threadgroupSize(let size) = threadgroupDeclaration,
@@ -136,7 +176,10 @@ public struct ASTShader {
                                     swiftName: className,
                                     accessLevel: accessLevel,
                                     parameters: parameters,
-                                    encodingVariants: [MTLKernelEncoder.EncodingVariant(dispatchType: type, threadgroupSize: size)])
+                                    encodingVariants: [MTLKernelEncoder.EncodingVariant(dispatchType: type, threadgroupSize: size)],
+                                    usedConstants: constants,
+                                    branchingConstant: branchingConstant,
+                                    threadgroupMemoryCalculations: threadgroupMemoryCalculatiosn)
         }
 
         return nil

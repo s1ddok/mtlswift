@@ -7,6 +7,9 @@
 
 import Foundation
 
+public protocol Model {
+}
+
 public class ASTNode {
     
     public enum Errors: Error {
@@ -18,13 +21,12 @@ public class ASTNode {
     
     public var contentType: ContentType
     
-    public var model: Any? = nil
+    public var model: Model? = nil
     
     public var stringValue: String? = nil
     public var integerValue: Int? = nil
     
     public init(parsingString inputString: String) throws {
-        
         let scanner = StringScanner(string: inputString)
         
         guard let prefix = scanner.readWord() else {
@@ -33,6 +35,56 @@ public class ASTNode {
         self.contentType = ContentType(rawValue: prefix)!
         
         switch self.contentType {
+        case .namespaceDecl:
+            scanner.skipWhiteSpaces()
+            scanner.skipHexIfAny()
+            scanner.skipWhiteSpaces()
+            scanner.skipSlocIfAny()
+            scanner.skipWhiteSpaces()
+
+            let namespaceName = scanner.readWord()
+            self.stringValue = namespaceName
+        case .varDecl:
+            scanner.skipWhiteSpaces()
+
+            guard let hex = scanner.readWord() else {
+                Swift.print("Missing hex in \(inputString)")
+                break
+            }
+
+            scanner.skipWhiteSpaces()
+            scanner.skipSlocIfAny()
+            scanner.skipWhiteSpaces()
+            scanner.skipUsedStatement()
+            scanner.skipWhiteSpaces()
+
+            if scanner.skip(exact: "referenced")
+            || scanner.skip(exact: "referenced value")
+            || scanner.skip(exact: "referenced next_expected")
+            || scanner.skip(exact: "referenced swapped")
+            || scanner.skip(exact: "referenced t")
+            || scanner.skip(exact: "invalid") {
+                break
+            }
+
+            guard let varName = scanner.readWord() else {
+                Swift.print("Parsing error in \(inputString)")
+                break
+                //throw Errors.parsingError
+            }
+
+            scanner.skipWhiteSpaces()
+
+            guard let typeDeclaration = scanner.readSingleQuotedTextIfAny() else {
+                Swift.print("Parsing error in \(inputString)")
+                break
+                //throw Errors.parsingError
+            }
+
+            let varDeclModel = VarDeclModel(id: Int64(hex.dropFirst(2), radix: 16)!,
+                                            name: varName,
+                                            typeDeclaration: typeDeclaration)
+            self.model = varDeclModel
         case .functionDecl, .parmVarDecl:
             scanner.skipWhiteSpaces()
             scanner.skipHexIfAny()
@@ -40,6 +92,8 @@ public class ASTNode {
             scanner.skipSlocIfAny()
             scanner.skipWhiteSpaces()
             scanner.skipUsedStatement()
+            scanner.skipWhiteSpaces()
+            scanner.skipInvalidStatement()
             scanner.skipWhiteSpaces()
             
             self.stringValue = scanner.readWord()
@@ -67,7 +121,13 @@ public class ASTNode {
             if let text = scanner.readTextAttribute() {
                 self.stringValue = text
             }
-        default: return
+        case .declRefExpr:
+            scanner.skipWhiteSpaces()
+            scanner.skipHexIfAny()
+
+            let usedIds = try scanner.readAll(pattern: "0[xX][0-9a-fA-F]+")
+            self.model = DeclRefModel(usedIds: usedIds.map { Int64($0.dropFirst(2), radix: 16)! })
+        default: ()
         }
     }
     
@@ -77,25 +137,63 @@ public class ASTNode {
             child.print(prefix: prefix + "  ")
         }
     }
+
+    public func hasUsageOfVar(with id: Int64) -> Bool {
+        if let declRefModel = self.model as? DeclRefModel,
+           declRefModel.usedIds.contains(id) {
+            return true
+        }
+
+        for child in self.children {
+            if child.hasUsageOfVar(with: id) {
+                return true
+            }
+        }
+
+        return false
+    }
+
+    public func extractMetalFunctionConstants() -> [ASTFunctionConstant] {
+        var retVal: [ASTFunctionConstant] = []
+
+        if let fc = self.tryExtractFunctionConstant() {
+            retVal.append(fc)
+        }
+
+        for child in self.children {
+            retVal.append(contentsOf: child.extractMetalFunctionConstants())
+        }
+
+        return retVal
+    }
+
+    public func tryExtractFunctionConstant() -> ASTFunctionConstant? {
+        guard
+            self.contentType == .varDecl,
+            let model = self.model as? VarDeclModel,
+            let attr = self.children.first(where: { $0.contentType == .metalFunctionConstantAttr }),
+            let idx = attr.children.first?.integerValue
+        else { return nil }
+
+        return ASTFunctionConstant(id: model.id, name: model.name, index: idx, type: model.functionConstantType)
+    }
     
-    public func extractMetalShaders() -> [ASTShader] {
-        let extractedShaders = self.children.map { $0.tryExtractShader() }
+    public func extractMetalShaders(constants: [ASTFunctionConstant]) -> [ASTShader] {
+        let extractedShaders = self.children.map { $0.tryExtractShader(constants: constants) }
         
         return extractedShaders.enumerated().flatMap { (offset, element) -> [ASTShader] in
             if element == nil {
-                return self.children[offset].extractMetalShaders()
+                return self.children[offset].extractMetalShaders(constants: constants)
             } else {
                 return [element!]
             }
         }
     }
     
-    private func tryExtractShader() -> ASTShader? {
+    private func tryExtractShader(constants: [ASTFunctionConstant]) -> ASTShader? {
         guard self.contentType == .functionDecl
-            && self.hasChildren(of: [.metalKernelAttr, .metalFragmentAttr, .metalVertexAttr])
-            else {
-                return nil
-        }
+           && self.hasChildren(of: [.metalKernelAttr, .metalFragmentAttr, .metalVertexAttr])
+        else { return nil }
         
         let parameterNode = self.children(of: .parmVarDecl)
         
@@ -108,16 +206,19 @@ public class ASTNode {
                 kind = .texture
             } else if pn.hasChildren(of: .metalBufferIndexAttr) {
                 kind = .buffer
+            } else if pn.hasChildren(of: .metalLocalIndexAttr) {
+                kind = .threadgroupMemory
             } else if pn.hasChildren(of: .metalStageInAttr) {
                 kind = .stageIn
             } else if pn.hasChildren(of: [.metalThreadPosGridAttr,
                                           .metalThreadPosGroupAttr,
                                           .metalThreadsPerGroupAttr,
+                                          .metalThreadsPerGridAttr,
                                           .metalThreadIndexGroupAttr]) { // TODO: add all
                 kind = .meta
             }
             
-            let idx = pn.children(of: [.metalSamplerIndexAttr, .metalTextureIndexAttr, .metalBufferIndexAttr])
+            let idx = pn.children(of: [.metalSamplerIndexAttr, .metalTextureIndexAttr, .metalBufferIndexAttr, .metalLocalIndexAttr])
                 .first?.children.first!.integerValue!
             
             return ASTShader.Parameter(name: pn.stringValue ?? "_", kind: kind, index: idx)
@@ -156,12 +257,14 @@ public class ASTNode {
                 }
             }
         }
-        
+
+        let usedConstants = constants.filter { self.hasUsageOfVar(with: $0.id) }
 
         return ASTShader(name: self.stringValue!,
                          kind: kind,
                          parameters: parameters,
-                         customDeclarations: declarations)
+                         customDeclarations: declarations,
+                         usedConstants: usedConstants)
     }
     
     public func hasChildren(of type: ContentType) -> Bool {

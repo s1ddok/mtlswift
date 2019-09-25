@@ -34,13 +34,15 @@ public enum CustomDeclaration {
             return
         } else if scanner.skip(exact: CustomDeclaration.swiftParameterTypeDeclaration) {
             guard
-                  let parameterName = scanner.readWord(),
-                  scanner.skip(exact: ":"),
-                  let swiftTypeName = scanner.readWord()
-                else {
-                    print("ERROR: Failed to parse \(CustomDeclaration.swiftParameterTypeDeclaration), skipping: \(scanner.leftString)")
-                    return nil
+                let parameterName = scanner.readWord(),
+                scanner.skip(exact: ":")
+            else {
+                print("ERROR: Failed to parse \(CustomDeclaration.swiftParameterTypeDeclaration), skipping: \(scanner.leftString)")
+                return nil
             }
+
+            let swiftTypeName = scanner.leftString
+                                       .trimmingCharacters(in: .whitespacesAndNewlines)
             
             // TODO: Check these are valid Swift identifiers
             self = .swiftParameterType(parameter: parameterName, type: swiftTypeName)
@@ -105,12 +107,74 @@ public enum CustomDeclaration {
                     self = .dispatchType(type: .even(parameters: .constant(x: xyz.x, y: xyz.y, z: xyz.z)))
                     return
                 }
+            } else if scanner.skip(exact: CustomDeclaration.optimalDispatchDeclaration) {
+                guard let functionConstantIndex = scanner.readBracketedInt(),
+                      scanner.skip(exact: ":")
+                else {
+                    assertionFailure("You can't have optimal dispatch without specifying branching constant")
+                    return nil
+                }
+
+                scanner.skipWhiteSpaces()
+                if scanner.skip(exact: CustomDeclaration.providedDispatchParameterDeclaration) {
+                    self = .dispatchType(type: .optimal(branchConstantIndex: functionConstantIndex, parameters: .provided))
+                    return
+                } else if scanner.skip(exact: CustomDeclaration.overDispatchParameterDeclaration) {
+                    if let argumentName = scanner.readWord() {
+                        self = .dispatchType(type: .optimal(branchConstantIndex: functionConstantIndex, parameters: .over(argument: argumentName)))
+                        return
+                    }
+                } else if let xyz = scanner.readXYZ() {
+                    self = .dispatchType(type: .optimal(branchConstantIndex: functionConstantIndex, parameters: .constant(x: xyz.x, y: xyz.y, z: xyz.z)))
+                    return
+                }
+            }
+        } else if scanner.skip(exact: CustomDeclaration.threadgroupMemoryDeclaration) {
+            guard let index = scanner.readBracketedInt(), scanner.skip(exact: ":") else {
+                assertionFailure("No index in threadgroup memory statement")
+                return nil
+            }
+
+            if scanner.skip(exact: CustomDeclaration.threadgroupMemoryTotal) {
+                guard let total = scanner.readInt() else {
+                    assertionFailure("Illegal expression in total threadgroup memory statement")
+                    return nil
+                }
+
+                self = .threadgroupMemory(index: index, length: .total(bytes: total))
+                return
+            } else if scanner.skip(exact: CustomDeclaration.threadgroupMemoryPerThread) {
+                guard let perThread = scanner.readInt() else {
+                    assertionFailure("Illegal expression in per thread threadgroup memory statement")
+                    return nil
+                }
+
+                self = .threadgroupMemory(index: index, length: .thread(bytes: perThread))
+                return
+            } else if scanner.skip(exact: CustomDeclaration.threadgroupMemoryProvided) {
+                if scanner.skip(exact: CustomDeclaration.threadgroupMemoryProvidedThread) {
+                    self = .threadgroupMemory(index: index, length: .providedPerThread)
+                    return
+                } else if scanner.skip(exact: CustomDeclaration.threadgroupMemoryProvidedTotal) {
+                    self = .threadgroupMemory(index: index, length: .providedTotal)
+                    return
+                }
             }
         }
-        
+
+        print("Illegal string passed: \(rawString)")
         return nil
     }
-    
+
+    public static let threadgroupMemoryDeclaration = "threadgroupMemory"
+    public static let threadgroupMemoryTotal = "total:"
+    public static let threadgroupMemoryPerThread = "thread:"
+    public static let threadgroupMemoryProvided = "provided:"
+    public static let threadgroupMemoryProvidedTotal = "total"
+    public static let threadgroupMemoryProvidedThread = "total"
+
+    case threadgroupMemory(index: Int, length: ThreadgroupMemoryLength)
+
     public static let threadgroupSizeDelcaration = "threadgroupSize:"
     public static let maxThreadgroupSizeDelcaration = "max"
     public static let providedThreadgroupSizeDelcaration = "provided"
@@ -122,6 +186,7 @@ public enum CustomDeclaration {
     public static let noneDispatchDeclaration = "none"
     public static let evenDispatchDeclaration = "even:"
     public static let exactDispatchDeclaration = "exact:"
+    public static let optimalDispatchDeclaration = "optimal"
     public static let overDispatchParameterDeclaration = "over:"
     public static let providedDispatchParameterDeclaration = "provided"
     case dispatchType(type: DispatchType)
@@ -135,7 +200,7 @@ public enum CustomDeclaration {
     public static let swiftParameterNameDeclaration = "swiftParameterName:"
     case swiftParameterName(oldName: String, newName: String)
     
-    public static let swiftParameterTypeDeclaration = "swiftParamteterType:"
+    public static let swiftParameterTypeDeclaration = "swiftParameteterType:"
     case swiftParameterType(parameter: String, type: String)
     
     public static let ignoreDeclaration = "ignore"
@@ -151,7 +216,8 @@ public enum CustomDeclaration {
                  (.swiftName(_), .swiftName(_)),
                  (.accessLevel(_), .accessLevel(_)),
                  (.dispatchType(_), .dispatchType(_)),
-                 (.threadgroupSize(_), .threadgroupSize(_))
+                 (.threadgroupSize(_), .threadgroupSize(_)),
+                 (.threadgroupMemory(_, _), .threadgroupMemory(_, _))
             : return true
         default:
             return false

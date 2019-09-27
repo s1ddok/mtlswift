@@ -2,12 +2,12 @@ import Foundation
 
 do {
     let firstArgument = CommandLine.arguments[1]
-    let secondArgument = CommandLine.arguments[2]
     let shaderGenerator = ShaderGenerator()
 
     var observers: [FileObserver] = []
 
     if firstArgument == "watch" {
+        let secondArgument = CommandLine.arguments[2]
         guard let url = URL(string: secondArgument) else {
             throw ""
         }

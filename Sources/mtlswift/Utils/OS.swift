@@ -13,6 +13,7 @@ import Foundation
 /// - parameter args: The arguments you wish to pass to the
 ///                   process.
 /// - returns: The standard output of the process, or nil if it was empty.
+@discardableResult
 func run(_ path: String, args: [String] = []) -> String? {
     let pipe = Pipe()
     let process = Process()
@@ -24,8 +25,9 @@ func run(_ path: String, args: [String] = []) -> String? {
 
     let data = pipe.fileHandleForReading.readDataToEndOfFile()
     guard let result = String(data: data, encoding: .utf8)?
-        .trimmingCharacters(in: .whitespacesAndNewlines),
-        !result.isEmpty else { return nil }
+                       .trimmingCharacters(in: .whitespacesAndNewlines),
+          !result.isEmpty
+    else { return nil }
     return result
 }
 

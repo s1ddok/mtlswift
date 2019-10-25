@@ -18,10 +18,13 @@ class GenerateCommand: Command {
     let name = "generate"
     let shortDescription = "generate encoders from metal sources"
 
+    let shadersPaths = CollectedParameter(validation: [.contains(".metal")])
     let encodersPath = Key<String>("-o", "--output",
                                    description: "generated encoders path",
                                    validation: [.contains(".swift")])
-    let shadersPaths = CollectedParameter(validation: [.contains(".metal")])
+    let ignorePaths = VariadicKey<String>("-i", "--ignore",
+                                          description: "ignored shader file path",
+                                          validation: [.contains(".metal")])
 
     // MARK: - LifeCycle
 
@@ -32,9 +35,12 @@ class GenerateCommand: Command {
     // MARK: - Execute
 
     func execute() throws {
-        let shadersURLs = self.shadersPaths.value.map { URL(fileURLWithPath: $0) }
-        for shadersURL in shadersURLs {
+        let ignorePaths = Set<String>(self.ignorePaths.value)
+        let shadersPaths = Set<String>(self.shadersPaths.value)
+        let shadersURLs = shadersPaths.subtracting(ignorePaths)
+                                      .map { URL(fileURLWithPath: $0) }
 
+        for shadersURL in shadersURLs {
             if let outputPath = self.encodersPath.value {
                 let outputURL = URL(fileURLWithPath: outputPath)
                 try? self.encoderGenerator.generateEncoders(for: shadersURLs,

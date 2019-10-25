@@ -7,39 +7,22 @@
 
 import Foundation
 import SwiftCLI
+import Files
 
-class WatchCommand: Command {
+final class WatchCommand: EncoderGeneratorCommand, Command {
 
     // MARK: - Properties
 
-    // Generator
-    let encoderGenerator: EncoderGenerator
     // Command
     let name = "watch"
     let shortDescription = "watch metal sources and autogenerate encoders"
 
-    let shadersPaths = CollectedParameter(validation: [.contains(".metal")])
-    let encodersPath = Key<String>("-o", "--output",
-                                   description: "generated encoders path",
-                                   validation: [.contains(".swift")])
-    let ignorePaths = VariadicKey<String>("-i", "--ignore",
-                                          description: "ignored shader file path",
-                                          validation: [.contains(".metal")])
-
-    // MARK: - LifeCycle
-
-    init(encoderGenerator: EncoderGenerator) {
-        self.encoderGenerator = encoderGenerator
-    }
-
     // MARK: - Execute
 
     func execute() throws {
-        let ignorePaths = Set<String>(self.ignorePaths.value)
-        let shadersPaths = Set<String>(self.shadersPaths.value)
-        let shadersURLs = shadersPaths.subtracting(ignorePaths)
-                                      .map { URL(fileURLWithPath: $0) }
+        try self.setup()
 
+        let shadersURLs = Array(self.shadersFilesURLs)
         for shadersURL in shadersURLs {
             let observer = FileObserver(file: shadersURL)
             observer.start {

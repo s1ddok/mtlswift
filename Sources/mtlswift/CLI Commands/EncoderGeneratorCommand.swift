@@ -21,8 +21,7 @@ class EncoderGeneratorCommand {
                                    description: "generated encoders path",
                                    validation: [.contains(".swift")])
     let ignorePaths = VariadicKey<String>("-i", "--ignore",
-                                          description: "ignored shader file path",
-                                          validation: [.contains(".metal")])
+                                          description: "ignored shaders file path")
     let recursiveFlag = Flag("-r", "--recursive",
                              description: "recursive search in folders",
                              defaultValue: false)

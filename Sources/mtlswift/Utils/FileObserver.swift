@@ -28,7 +28,7 @@ class FileObserver {
         // Create our dispatch source
         let source = DispatchSource.makeFileSystemObjectSource(
             fileDescriptor: fileDescriptor,
-            eventMask: .all,
+            eventMask: DispatchSource.FileSystemEvent.all.subtracting(.attrib),
             queue: queue)
 
         // Assign the closure to it, and resume it to start observing

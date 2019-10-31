@@ -78,7 +78,6 @@ public struct MTLKernelEncoder {
                 case .ushort2: sourceBuilder.add(line: "constantValues.set(\(constant.name), type: .ushort2, at: \(constant.index))")
                 default: sourceBuilder.add(line: "constantValues.set(\(constant.name), at: \(constant.index))")
                 }
-
             }
 
             sourceBuilder.add(line: "self.pipelineState = try library.computePipelineState(function: \"\(self.shaderName)\", constants: constantValues)")
@@ -138,7 +137,7 @@ public struct MTLKernelEncoder {
                         sourceBuilder.add(line: "encoder.set(\(parameter.name), at: \(parameter.index))")
                     }
                 case .texture:
-                    sourceBuilder.add(line: "encoder.set(\(parameter.name), at: \(parameter.index))")
+                    sourceBuilder.add(line: "encoder.setTexture(\(parameter.name), index: \(parameter.index))")
                 case .sampler:
                     sourceBuilder.add(line: "encoder.setSamplerState(\(parameter.name), index: \(parameter.index))")
                 case .threadgroupMemory:
@@ -190,7 +189,7 @@ public struct MTLKernelEncoder {
                     targetParameter.kind == .texture {
                     sourceBuilder.add(line: "encoder.dispatch2d(state: self.pipelineState, exactly: \(targetParameter.name).size\(threadgroupExpressionString))")
                 } else {
-                    fatalError("Could not generate dispatching over parameter \(argument)")
+                    print("Could not generate dispatching over parameter \(argument)")
                 }
 
             // MARK: Optimal dispatching
@@ -205,7 +204,7 @@ public struct MTLKernelEncoder {
                    targetParameter.kind == .texture {
                     let bc = self.branchingConstant!
                     sourceBuilder.add(line: "if self.\(bc.name) { encoder.dispatch2d(state: self.pipelineState, exactly: \(targetParameter.name).size\(threadgroupExpressionString)) } else { encoder.dispatch2d(state: self.pipelineState, covering: \(targetParameter.name).size\(threadgroupExpressionString)) }")
-                } else { fatalError("Could not generate dispatching over parameter \(argument)") }
+                } else { print("Could not generate dispatching over parameter \(argument)") }
             }
 
             sourceBuilder.popLevel()

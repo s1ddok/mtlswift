@@ -23,16 +23,18 @@ final class GenerateCommand: EncoderGeneratorCommand, Command {
         try self.setup()
 
         let shadersURLs = Array(self.shadersFilesURLs)
-        for shadersURL in shadersURLs {
-            if let outputPath = self.encodersPath.value {
-                let outputURL = URL(fileURLWithPath: outputPath)
-                try self.encoderGenerator.generateEncoders(for: shadersURLs,
-                                                           output: outputURL)
-            } else {
-                try self.encoderGenerator.generateEncoders(for: [shadersURL])
+        if let outputPath = self.encodersPath.value {
+            let outputURL = URL(fileURLWithPath: outputPath)
+            shadersURLs.forEach {
+                stdout <<< "generating encoder for shader file on url \($0)"
             }
-
-            stdout <<< "generating encoder for shader file on url \(shadersURL)"
+            try self.encoderGenerator.generateEncoders(for: shadersURLs,
+                                                       output: outputURL)
+        } else {
+            try shadersURLs.forEach {
+                stdout <<< "generating encoder for shader file on url \($0)"
+                try self.encoderGenerator.generateEncoders(for: [$0])
+            }
         }
 
     }

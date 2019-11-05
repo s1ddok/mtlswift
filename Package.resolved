@@ -2,12 +2,21 @@
   "object": {
     "pins": [
       {
-        "package": "Clang",
-        "repositoryURL": "https://github.com/s1ddok/ClangSwift",
+        "package": "Files",
+        "repositoryURL": "https://github.com/JohnSundell/Files",
         "state": {
-          "branch": "static-lib",
-          "revision": "d083d06ba96ac4e9928c26b4848531cd1e9f7ff2",
-          "version": null
+          "branch": null,
+          "revision": "6568bfe636f02dfd85dc9d51b3782555b83080d3",
+          "version": "4.0.2"
+        }
+      },
+      {
+        "package": "SwiftCLI",
+        "repositoryURL": "https://github.com/jakeheis/SwiftCLI",
+        "state": {
+          "branch": null,
+          "revision": "df4d5b3ec2c1421a58d71010ff43528db5b19e04",
+          "version": "5.3.3"
         }
       }
     ]

@@ -154,5 +154,6 @@ public extension ASTNode {
         case varDecl = "VarDecl"
         case varTemplateDecl = "VarTemplateDecl"
         case varTemplateSpecializationDecl = "VarTemplateSpecializationDecl"
+        case whileStmt = "WhileStmt"
     }
 }

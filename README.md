@@ -47,9 +47,7 @@ namespace mtlswift {}
 
 * `mtlswift:`
 
-  **Description**: `mtlswift` uses this declaration prefix to identify the start of a declaration. This is a required prefix to any declaration.
-
-  **Example**:
+  The program uses this declaration prefix to identify the start of a declaration. This is a required prefix to any declaration.
   
   ```C++
   /// mtlswift: ...
@@ -58,13 +56,11 @@ namespace mtlswift {}
 
 * `dispatch:`
 
-  **Description**: a dispatch type to use.
+  A dispatch type to use.
 
   * `even: width, height, depth`
 
     Dispatch threadgroups of a uniform threadgroup size. `Width`, `height` and `depth` describe the grid size.
-
-    **Example**:
     
     ```C++
     /// mtlswift:dispatch:exact:1024, 768, 1
@@ -75,8 +71,6 @@ namespace mtlswift {}
   * `exact: width, height, depth`
 
     Dispatch threads with threadgroups of non-uniform size. Again, `width`, `height` and `depth` describe the grid size.
-
-    **Example**:
     
     ```C++
     /// mtlswift:dispatch:exact:1024, 768, 1
@@ -87,9 +81,8 @@ namespace mtlswift {}
   * `optimal(function_constant_index):over:texture_name`
     
     * `optimal` uses `exact` type if GPU supports non uniform threadgroup size and `over` if it doesn't. This declaration requires a boolean function constant index to be passed to make the decision what dispatch type to use.
+    
     * `over` is a convenient way to set the grid size equal to the size of certain texture. The name of a texture must be provided.
-
-    **Example**:
     
     ```C++
     constant bool deviceSupportsNonuniformThreadgroups [[function_constant(0)]];
@@ -105,7 +98,7 @@ namespace mtlswift {}
 
 * `threadgroupSize:`
 
-  **Description**: specify the threadgroup size.
+  Specify the threadgroup size.
   
   * `max`
   
@@ -119,7 +112,6 @@ namespace mtlswift {}
   
     In this case user has to pass the threadgroup size and an argument to `encode(...` function.
 
-  **Example**:
   ```C++
   /// mtlswift:threadgroupSize:provided
   kernel void exampleKernel(texture2d<half, access::read> sourceTexture [[ texture(0) ]],
@@ -128,9 +120,8 @@ namespace mtlswift {}
 
 * `swiftParameteterType:`
 
-  **Description**: the name and the type of the buffers passed to the kernel.
+  The name and the type of the buffers passed to the kernel.
 
-  **Example**:
   ```C++
   /// mtlswift:swiftParameteterType:offset:vector_ushort2
   /// mtlswift:swiftParameteterType:intensities:vector_float3

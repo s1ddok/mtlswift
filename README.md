@@ -33,8 +33,6 @@ List of currently supported arguments:
 
 To support encoders generation first of all you need to add `namespace mtlswift {}` at the beginning of the file.
 
-**Example**:
-
 ```C++
 #include <metal_stdlib>
 

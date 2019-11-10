@@ -45,7 +45,9 @@ namespace mtlswift {}
 #### Arguments
 
 * `mtlswift:`
+
   **Description**: `mtlswift` uses this declaration prefix to identify a start of a declaration. It is a required prefix to any argument.
+
   **Example**:
   ```C++
   /// mtlswift: ...
@@ -53,10 +55,13 @@ namespace mtlswift {}
   ```
 
 * `dispatch:`
+
   **Description**: a dispatch type to use.
 
   * `even: width, height, depth`
+
     **Description**: dispatch threadgroups of uniform threadgroup size. `Width`, `height` and `depth` describe the grid size.
+
     **Example**:
     ```C++
     /// mtlswift:dispatch:exact:1024, 768, 1
@@ -65,7 +70,9 @@ namespace mtlswift {}
     ```
 
   * `exact: width, height, depth`
+
     **Description**: dispatch threads with threadgroups of non-uniform size. Again, `width`, `height` and `depth` is a grid size.
+
     **Example**:
     ```C++
     /// mtlswift:dispatch:exact:1024, 768, 1
@@ -74,9 +81,11 @@ namespace mtlswift {}
     ```
 
   * `optimal(function_constant_index):over:texture_name`
+
     **Description**:
     * `optimal` uses `exact` type if GPU supports non uniform threadgroup size and `over` if it doesn't. This declaration requires a boolean function constant index to be passed to make the decision what dispatch type to use.
     * `over` is a convenient way to set the grid size equal to the size of certain texture. The name of a texture must be provided.
+
     **Example**:
     ```C++
     constant bool deviceSupportsNonuniformThreadgroups [[function_constant(0)]];
@@ -106,7 +115,9 @@ namespace mtlswift {}
   ```
 
 * `swiftParameteterType:`
+
   **Description**: the name and the type of the buffers passed to the kernel.
+  
   **Example**:
   ```C++
   /// mtlswift:swiftParameteterType:offset:vector_ushort2

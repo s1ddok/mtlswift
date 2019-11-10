@@ -34,6 +34,7 @@ List of currently supported arguments:
 To support encoders generation first of all you need to add `namespace mtlswift {}` at the beginning of the file.
 
 **Example**:
+
 ```C++
 #include <metal_stdlib>
 
@@ -49,6 +50,7 @@ namespace mtlswift {}
   **Description**: `mtlswift` uses this declaration prefix to identify the start of a declaration. This is a required prefix to any declaration.
 
   **Example**:
+  
   ```C++
   /// mtlswift: ...
   kernel void exampleKernel(...
@@ -60,9 +62,10 @@ namespace mtlswift {}
 
   * `even: width, height, depth`
 
-    **Description**: dispatch threadgroups of a uniform threadgroup size. `Width`, `height` and `depth` describe the grid size.
+    Dispatch threadgroups of a uniform threadgroup size. `Width`, `height` and `depth` describe the grid size.
 
     **Example**:
+    
     ```C++
     /// mtlswift:dispatch:exact:1024, 768, 1
     kernel void exampleKernel(texture2d<half, access::read_write> inPlaceTexture [[ texture(0) ]],
@@ -71,9 +74,10 @@ namespace mtlswift {}
 
   * `exact: width, height, depth`
 
-    **Description**: dispatch threads with threadgroups of non-uniform size. Again, `width`, `height` and `depth` describe the grid size.
+    Dispatch threads with threadgroups of non-uniform size. Again, `width`, `height` and `depth` describe the grid size.
 
     **Example**:
+    
     ```C++
     /// mtlswift:dispatch:exact:1024, 768, 1
     kernel void exampleKernel(texture2d<half, access::read_write> inPlaceTexture [[ texture(0) ]],
@@ -81,12 +85,12 @@ namespace mtlswift {}
     ```
 
   * `optimal(function_constant_index):over:texture_name`
-
-    **Description**:
+    
     * `optimal` uses `exact` type if GPU supports non uniform threadgroup size and `over` if it doesn't. This declaration requires a boolean function constant index to be passed to make the decision what dispatch type to use.
     * `over` is a convenient way to set the grid size equal to the size of certain texture. The name of a texture must be provided.
 
     **Example**:
+    
     ```C++
     constant bool deviceSupportsNonuniformThreadgroups [[function_constant(0)]];
 
@@ -96,16 +100,24 @@ namespace mtlswift {}
     ```
 
   * `none`
-    **Description**: the dispatch type set by default. In this case user has to specify it manually in Swift.
+  
+    The dispatch type set by default. In this case user has to specify it manually in Swift.
 
 * `threadgroupSize:`
+
   **Description**: specify the threadgroup size.
+  
   * `max`
-    **Description**: this parameter sets the pipeline state's [`max2dThreadgroupSize`](https://github.com/s1ddok/Alloy/blob/b82aa3fde347a81eef9551be7ffc28eec2b93bca/Alloy/MTLComputePipelineState%2BThreads.swift#L24).
+  
+    This parameter sets the pipeline state's [`max2dThreadgroupSize`](https://github.com/s1ddok/Alloy/blob/b82aa3fde347a81eef9551be7ffc28eec2b93bca/Alloy/MTLComputePipelineState%2BThreads.swift#L24).
+    
   * `executionWidth`
-    **Description**: this parameter sets the pipeline state's [`executionWidthThreadgroupSize`](https://github.com/s1ddok/Alloy/blob/b82aa3fde347a81eef9551be7ffc28eec2b93bca/Alloy/MTLComputePipelineState%2BThreads.swift#L12).
+  
+    This parameter sets the pipeline state's [`executionWidthThreadgroupSize`](https://github.com/s1ddok/Alloy/blob/b82aa3fde347a81eef9551be7ffc28eec2b93bca/Alloy/MTLComputePipelineState%2BThreads.swift#L12).
+    
   * `provided`
-    **Description**: in this case user has to pass the threadgroup size and an argument to `encode(...` function.
+  
+    In this case user has to pass the threadgroup size and an argument to `encode(...` function.
 
   **Example**:
   ```C++

@@ -46,7 +46,7 @@ namespace mtlswift {}
 
 * `mtlswift:`
 
-  **Description**: `mtlswift` uses this declaration prefix to identify a start of a declaration. It is a required prefix to any argument.
+  **Description**: `mtlswift` uses this declaration prefix to identify the start of a declaration. This is a required prefix to any declaration.
 
   **Example**:
   ```C++
@@ -60,7 +60,7 @@ namespace mtlswift {}
 
   * `even: width, height, depth`
 
-    **Description**: dispatch threadgroups of uniform threadgroup size. `Width`, `height` and `depth` describe the grid size.
+    **Description**: dispatch threadgroups of a uniform threadgroup size. `Width`, `height` and `depth` describe the grid size.
 
     **Example**:
     ```C++
@@ -71,7 +71,7 @@ namespace mtlswift {}
 
   * `exact: width, height, depth`
 
-    **Description**: dispatch threads with threadgroups of non-uniform size. Again, `width`, `height` and `depth` is a grid size.
+    **Description**: dispatch threads with threadgroups of non-uniform size. Again, `width`, `height` and `depth` describe the grid size.
 
     **Example**:
     ```C++
@@ -117,7 +117,7 @@ namespace mtlswift {}
 * `swiftParameteterType:`
 
   **Description**: the name and the type of the buffers passed to the kernel.
-  
+
   **Example**:
   ```C++
   /// mtlswift:swiftParameteterType:offset:vector_ushort2

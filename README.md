@@ -61,7 +61,7 @@ namespace mtlswift {}
     Dispatch threadgroups of a uniform threadgroup size. `Width`, `height` and `depth` describe the grid size.
     
     ```C++
-    /// mtlswift:dispatch:exact:1024, 768, 1
+    /// mtlswift:dispatch:even:1024, 768, 1
     kernel void exampleKernel(texture2d<half, access::read_write> inPlaceTexture [[ texture(0) ]],
                               ...
     ```

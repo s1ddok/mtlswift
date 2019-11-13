@@ -15,7 +15,7 @@ The user is able to provide multiple paths to the shaders files or folders conta
 mtlswift watch ../shaders_folder/ ../../another_shaders_folder/Shaders.metal
 ```
 
-> WARNING: This tool currently generates encoders for [`Alloy`](https://github.com/s1ddok/Alloy] syntax. We will probably support vanilla Metal code in the future.
+> WARNING: This tool currently generates encoders for [`Alloy`](https://github.com/s1ddok/Alloy) syntax. We will probably support vanilla Metal code in the future.
 
 #### CLI Options
 

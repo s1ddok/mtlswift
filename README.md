@@ -15,6 +15,8 @@ The user is able to provide multiple paths to the shaders files or folders conta
 mtlswift watch ../shaders_folder/ ../../another_shaders_folder/Shaders.metal
 ```
 
+> WARNING: This tool currently generates encoders for [`Alloy`](https://github.com/s1ddok/Alloy] syntax. We will probably support vanilla Metal code in the future.
+
 #### CLI Options
 
 List of currently supported arguments:
@@ -52,9 +54,9 @@ Every custom annotation starts with `mtlswift:`. The program uses this declarati
 
 * `dispatch:`
 
-  A dispatch type to use.
+  A dispatch type to use. All of dispatch types has to be followed by either constant amount of threads via literals (like `X, Y, Z`), specifying a target texture to cover via `over:` argument or stating that amount of threads will be provided by user by using `provided`. You can see all of the examples into each section, but you can choose the combination yourself.
 
-  * `even: width, height, depth`
+  * `even`
 
     Dispatch threadgroups of a uniform threadgroup size. `Width`, `height` and `depth` describe the grid size.
     
@@ -64,38 +66,40 @@ Every custom annotation starts with `mtlswift:`. The program uses this declarati
                               ...
     ```
 
-  * `exact: width, height, depth`
+  * `exact`
 
     Dispatch threads with threadgroups of non-uniform size. Again, `width`, `height` and `depth` describe the grid size.
     
     ```C++
-    /// mtlswift:dispatch:exact:1024, 768, 1
+    /// mtlswift:dispatch:exact:over:inPlaceTexture
     kernel void exampleKernel(texture2d<half, access::read_write> inPlaceTexture [[ texture(0) ]],
                               ...
     ```
 
-  * `optimal(function_constant_index):over:texture_name`
+  * `optimal(function_constant_index)`
     
-    * `optimal` uses `exact` type if GPU supports non uniform threadgroup size and `over` if it doesn't. This declaration requires a boolean function constant index to be passed to make the decision what dispatch type to use.
-    
-    * `over` is a convenient way to set the grid size equal to the size of certain texture. The name of a texture must be provided.
+    Uses `exact` type if GPU supports non uniform threadgroup size and `over` if it doesn't. This declaration requires a boolean function constant index to be passed to make the decision what dispatch type to use.
     
     ```C++
     constant bool deviceSupportsNonuniformThreadgroups [[function_constant(0)]];
 
-    /// mtlswift:dispatch:optimal(0):over:sourceTexture
+    /// mtlswift:dispatch:optimal(0):provided
     kernel void exampleKernel(texture2d<half, access::read> sourceTexture [[ texture(0) ]],
                               ...
     ```
-
+    
   * `none`
   
-    The dispatch type set by default. In this case user has to specify it manually in Swift.
+    The dispatch type set by default. In this case user has to dispatch kernel manually, after calling `encode` method
 
 * `threadgroupSize:`
 
   Specify the threadgroup size.
   
+  * `X, Y, Z`
+  
+    Allows to specify constant X, Y and Z dimensions for threadgroup size.
+    
   * `max`
   
     This parameter sets the pipeline state's [`max2dThreadgroupSize`](https://github.com/s1ddok/Alloy/blob/b82aa3fde347a81eef9551be7ffc28eec2b93bca/Alloy/MTLComputePipelineState%2BThreads.swift#L24).
@@ -125,6 +129,13 @@ Every custom annotation starts with `mtlswift:`. The program uses this declarati
                             constant float3& intensities [[buffer(1)]],
                             ...
   ```
+* `swiftName:`
+
+   Encoder's name in generated Swift code. Must be followed by a valid Swift identifier.
+   
+* `accessLevel:`
+
+   Specifies the access visibility of the encoder. Must be followed by either `public`, `open`, `internal`, `private` or `fileprivate`. `internal` is the default.
 
 # Contributors 
 

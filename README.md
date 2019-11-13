@@ -41,11 +41,9 @@ using namespace metal;
 namespace mtlswift {}
 ```
 
-#### Arguments
+### Customizing generation
 
-* `mtlswift:`
-
-  The program uses this declaration prefix to identify the start of a declaration. This is a required prefix to any declaration.
+Every custom annotation starts with `mtlswift:`. The program uses this declaration prefix to identify the start of a declaration. It must be written in a doc string way right before the kernel.
   
   ```C++
   /// mtlswift: ...
@@ -128,6 +126,9 @@ namespace mtlswift {}
                             ...
   ```
 
+# Contributors 
+
+* [@eugenebokhan](https://github.com/eugenebokhan) is responsible for nice CLI that this tool has and also for docs that can guide you around
 
 ## License
 

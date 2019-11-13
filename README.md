@@ -68,7 +68,7 @@ Every custom annotation starts with `mtlswift:`. The program uses this declarati
 
   * `exact`
 
-    Dispatch threads with threadgroups of non-uniform size. Again, `width`, `height` and `depth` describe the grid size.
+    Dispatch threads with threadgroups of non-uniform size. 
     
     ```C++
     /// mtlswift:dispatch:exact:over:inPlaceTexture

@@ -1,6 +1,6 @@
 # mtlswift
 
-Experimental code-generator of Swift Metal encoding code
+Swift code generator for Metal encoding code. This tool enables bugs-free, rapid shader-driven development, reduces your GPU codebase by at least a factor of two and prevents any encoding bugs (i.e. wrong resources indexes, shader names etc)
 
 ## Usage
 

@@ -14,6 +14,7 @@ public class ASTNode {
     
     public enum Errors: Error {
         case parsingError
+        case contentTypeCreationFailed
     }
     
     public weak var parent: ASTNode?
@@ -29,10 +30,12 @@ public class ASTNode {
     public init(parsingString inputString: String) throws {
         let scanner = StringScanner(string: inputString)
         
-        guard let prefix = scanner.readWord() else {
-            throw Errors.parsingError
-        }
-        self.contentType = ContentType(rawValue: prefix)!
+        guard let prefix = scanner.readWord()
+        else { throw Errors.parsingError }
+
+        guard let contentType = ContentType(rawValue: prefix)
+        else { throw Errors.contentTypeCreationFailed }
+        self.contentType = contentType
         
         switch self.contentType {
         case .namespaceDecl:
@@ -70,7 +73,6 @@ public class ASTNode {
             guard let varName = scanner.readWord() else {
                 Swift.print("Parsing error in \(inputString)")
                 break
-                //throw Errors.parsingError
             }
 
             scanner.skipWhiteSpaces()
@@ -78,7 +80,6 @@ public class ASTNode {
             guard let typeDeclaration = scanner.readSingleQuotedTextIfAny() else {
                 Swift.print("Parsing error in \(inputString)")
                 break
-                //throw Errors.parsingError
             }
 
             let varDeclModel = VarDeclModel(id: Int64(hex.dropFirst(2), radix: 16)!,
@@ -168,14 +169,16 @@ public class ASTNode {
     }
 
     public func tryExtractFunctionConstant() -> ASTFunctionConstant? {
-        guard
-            self.contentType == .varDecl,
-            let model = self.model as? VarDeclModel,
-            let attr = self.children.first(where: { $0.contentType == .metalFunctionConstantAttr }),
-            let idx = attr.children.first?.integerValue
+        guard self.contentType == .varDecl,
+              let model = self.model as? VarDeclModel,
+              let attr = self.children.first(where: { $0.contentType == .metalFunctionConstantAttr }),
+              let idx = attr.children.first?.integerValue
         else { return nil }
 
-        return ASTFunctionConstant(id: model.id, name: model.name, index: idx, type: model.functionConstantType)
+        return ASTFunctionConstant(id: model.id,
+                                   name: model.name,
+                                   index: idx,
+                                   type: model.functionConstantType)
     }
     
     public func extractMetalShaders(constants: [ASTFunctionConstant]) -> [ASTShader] {
@@ -192,18 +195,25 @@ public class ASTNode {
     
     private func tryExtractShader(constants: [ASTFunctionConstant]) -> ASTShader? {
         guard self.contentType == .functionDecl
-           && self.hasChildren(of: [.metalKernelAttr, .metalFragmentAttr, .metalVertexAttr])
+           && self.hasChildren(of: [.metalKernelAttr,
+                                    .metalFragmentAttr,
+                                    .metalVertexAttr])
         else { return nil }
-        
+
         let parameterNode = self.children(of: .parmVarDecl)
-        
+        var declarations: [CustomDeclaration] = []
+
         let parameters: [ASTShader.Parameter] = parameterNode.map { pn in
             var kind: ASTShader.Parameter.Kind = .unknown
-            
+
             if pn.hasChildren(of: .metalSamplerIndexAttr) {
                 kind = .sampler
             } else if pn.hasChildren(of: .metalTextureIndexAttr) {
                 kind = .texture
+                if let _ = pn.children.first(where: { $0.contentType == .metalFunctionConstantAttr }) {
+                    declarations.append(.swiftParameterType(parameter: pn.stringValue ?? "_",
+                                                            type: "MTLTexture?"))
+                }
             } else if pn.hasChildren(of: .metalBufferIndexAttr) {
                 kind = .buffer
             } else if pn.hasChildren(of: .metalLocalIndexAttr) {
@@ -217,13 +227,16 @@ public class ASTNode {
                                           .metalThreadIndexGroupAttr]) { // TODO: add all
                 kind = .meta
             }
-            
-            let idx = pn.children(of: [.metalSamplerIndexAttr, .metalTextureIndexAttr, .metalBufferIndexAttr, .metalLocalIndexAttr])
-                .first?.children.first!.integerValue!
-            
+
+            let idx = pn.children(of: [.metalSamplerIndexAttr,
+                                       .metalTextureIndexAttr,
+                                       .metalBufferIndexAttr,
+                                       .metalLocalIndexAttr])
+                        .first?.children.first!.integerValue!
+
             return ASTShader.Parameter(name: pn.stringValue ?? "_", kind: kind, index: idx)
         }
-        
+
         let kind: ASTShader.Kind
         
         if self.hasChildren(of: .metalKernelAttr) {
@@ -233,8 +246,7 @@ public class ASTNode {
         } else {
             kind = .vertex
         }
-        
-        var declarations: [CustomDeclaration] = []
+
         if let fullComment = self.children(of: .fullComment).first {
             for paragraph in fullComment.children(of: .paragraphComment) {
                 textLoop: for text in paragraph.children(of: .textComment) {

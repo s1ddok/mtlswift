@@ -60,7 +60,7 @@ public struct ASTShader {
             case .swiftName(let name) = nameDeclaration {
             className = name
         } else {
-            className = "\(name.capitalizingFirstLetter)Encoder"
+            className = "\(name.capitalizingFirstLetter)"
         }
 
         var swiftNameLookup: [String: String] = [:]

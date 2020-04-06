@@ -11,7 +11,7 @@ extension MTLSwift {
         func validate() throws {
             if let outputPath = self.options.outputPath,
                 !outputPath.contains(".swift") {
-                throw ValidationError(".")
+                throw ValidationError("Output file extension is not `.swift`")
             }
         }
 

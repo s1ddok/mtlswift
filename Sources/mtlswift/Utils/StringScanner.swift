@@ -1,10 +1,3 @@
-//
-//  StringScanner.swift
-//  mtlswift
-//
-//  Created by Andrey Volodin on 08/01/2019.
-//
-
 import Foundation
 
 public class StringScanner {

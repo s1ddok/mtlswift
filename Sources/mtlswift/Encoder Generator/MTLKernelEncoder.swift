@@ -1,10 +1,3 @@
-//
-//  MTLKernelEncoder.swift
-//  Clang
-//
-//  Created by Andrey Volodin on 07/02/2019.
-//
-
 public struct MTLKernelEncoder {
 
     public struct Parameter {

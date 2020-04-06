@@ -1,10 +1,3 @@
-//
-//  SourceStringBuilder.swift
-//  mtlswift
-//
-//  Created by Andrey Volodin on 08/01/2019.
-//
-
 public class SourceStringBuilder {
     public var identationLevel = "  "
 

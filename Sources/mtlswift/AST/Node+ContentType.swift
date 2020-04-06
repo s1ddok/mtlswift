@@ -1,10 +1,3 @@
-//
-//  Node+ContentType.swift
-//  Clang
-//
-//  Created by Andrey Volodin on 07/01/2019.
-//
-
 public extension ASTNode {
     enum ContentType: String {
         case `enum` = "Enum"

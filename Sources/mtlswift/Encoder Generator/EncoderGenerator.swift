@@ -1,14 +1,11 @@
-//
-//  ShaderGenerator.swift
-//  mtlswift
-//
-//  Created by Andrey Volodin on 25/09/2019.
-//
-
 import Foundation
 
-public class EncoderGenerator {
-    func generateEncoders(for metalFileURLs: [URL], output: URL? = nil) throws {
+final class EncoderGenerator {
+
+    private init() {}
+
+    func generateEncoders(for metalFileURLs: [URL],
+                          output: URL? = nil) throws {
 
         let builder = SourceStringBuilder()
         var headerIsAdded = false
@@ -125,4 +122,6 @@ public class EncoderGenerator {
         }
 
     }
+
+    static let shared = EncoderGenerator()
 }

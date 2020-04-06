@@ -1,10 +1,3 @@
-//
-//  DispatchType.swift
-//  mtlswift
-//
-//  Created by Andrey Volodin on 07/02/2019.
-//
-
 public enum DispatchType {
 
     public enum DispatchParameters {

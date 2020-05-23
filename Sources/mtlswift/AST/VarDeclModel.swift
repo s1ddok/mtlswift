@@ -1,10 +1,3 @@
-//
-//  VarDeclModel.swift
-//  mtlswift
-//
-//  Created by Andrey Volodin on 13/02/2019.
-//
-
 public struct VarDeclModel: Model {
     public var id: Int64
     public var name: String

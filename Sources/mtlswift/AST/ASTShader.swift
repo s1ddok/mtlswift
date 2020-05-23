@@ -1,10 +1,3 @@
-//
-//  MTLShader.swift
-//  mtlswift
-//
-//  Created by Andrey Volodin on 08/01/2019.
-//
-
 extension String {
     var capitalizingFirstLetter: String {
         guard !self.isEmpty else { return self }

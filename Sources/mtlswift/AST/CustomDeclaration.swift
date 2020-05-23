@@ -1,10 +1,3 @@
-//
-//  CustomDeclaration.swift
-//  mtlswift
-//
-//  Created by Andrey Volodin on 10/01/2019.
-//
-
 public enum CustomDeclaration {
     
     public init?(rawString: String) {

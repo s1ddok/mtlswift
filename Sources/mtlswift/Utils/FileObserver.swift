@@ -1,10 +1,3 @@
-//
-//  FileObserver.swift
-//  mtlswift
-//
-//  Created by Andrey Volodin on 25/09/2019.
-//
-
 import Foundation
 
 class FileObserver {

@@ -11,12 +11,12 @@
         }
       },
       {
-        "package": "SwiftCLI",
-        "repositoryURL": "https://github.com/jakeheis/SwiftCLI",
+        "package": "swift-argument-parser",
+        "repositoryURL": "https://github.com/apple/swift-argument-parser",
         "state": {
           "branch": null,
-          "revision": "df4d5b3ec2c1421a58d71010ff43528db5b19e04",
-          "version": "5.3.3"
+          "revision": "8d31a0905c346a45c87773ad50862b5b3df8dff6",
+          "version": "0.0.4"
         }
       }
     ]

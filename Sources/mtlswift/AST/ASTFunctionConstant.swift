@@ -1,10 +1,3 @@
-//
-//  ASTFunctionConstant.swift
-//  mtlswift
-//
-//  Created by Andrey Volodin on 13/02/2019.
-//
-
 public struct ASTFunctionConstant {
     public enum TypeDelcaration {
         // TODO: Support all types

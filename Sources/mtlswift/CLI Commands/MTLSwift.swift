@@ -1,48 +1,42 @@
-//
-//  EncoderGeneratorCommand.swift
-//  mtlswift
-//
-//  Created by Eugene Bokhan on 25.10.2019.
-//
-
 import Foundation
-import SwiftCLI
+import ArgumentParser
 import Files
 
-class EncoderGeneratorCommand {
+struct MTLSwift: ParsableCommand {
 
-    // MARK: - Properties
+    struct Options: ParsableArguments {
+        @Argument(help: "Input Paths.")
+        var inputPaths: [String]
 
-    // Generator
-    let encoderGenerator: EncoderGenerator
-    // Command
-    let inputPaths = CollectedParameter()
-    let encodersPath = Key<String>("-o", "--output",
-                                   description: "generated encoders path",
-                                   validation: [.contains(".swift")])
-    let ignorePaths = VariadicKey<String>("-i", "--ignore",
-                                          description: "ignored shaders file path")
-    let recursiveFlag = Flag("-r", "--recursive",
-                             description: "recursive search in folders",
-                             defaultValue: false)
-    var shadersFilesURLs: Set<URL> = []
+        @Option(name: .shortAndLong,
+                help: "Ignored shaders file path.")
+        var ignoreInputPaths: [String]
 
-    // MARK: - LifeCycle
+        @Option(name: .shortAndLong,
+                help: "Generated encoders path.")
+        var outputPath: String?
 
-    init(encoderGenerator: EncoderGenerator) {
-        self.encoderGenerator = encoderGenerator
+        @Flag(name: [.customLong("recursive"), .customShort("r")],
+              help: "Recursive search in folders.")
+        var isRecursive: Bool
     }
 
-    // MARK: - Setup
+    static var configuration = CommandConfiguration(
+        abstract: "A utility for generating metal shaders encoders.",
+        subcommands: [Generate.self, Watch.self],
+        defaultSubcommand: Generate.self
+    )
 
-    func setup() throws {
-        let shadersFilesURLs = try self.findShadersFiles(at: self.inputPaths.value)
-        let ignoreURLs = try self.findShadersFiles(at: self.ignorePaths.value)
+    static func setup(using options: Options) throws -> Set<URL> {
+        let shadersFilesURLs = try Self.findShadersFiles(at: options.inputPaths,
+                                                         isRecursive: options.isRecursive)
+        let ignoreURLs = try Self.findShadersFiles(at: options.ignoreInputPaths,
+                                                   isRecursive: options.isRecursive)
 
-        self.shadersFilesURLs = shadersFilesURLs.subtracting(ignoreURLs)
+        return shadersFilesURLs.subtracting(ignoreURLs)
     }
 
-    private func findShadersFiles(at paths: [String]) throws -> Set<URL> {
+    static func findShadersFiles(at paths: [String], isRecursive: Bool) throws -> Set<URL> {
         let inputPaths = Set<String>(paths)
         var foundShadersFilesPaths: Set<String> = []
         var foldersPaths: Set<String> = []
@@ -61,7 +55,7 @@ class EncoderGeneratorCommand {
         try folders.forEach { folder in
             folder.files.filter { $0.path.pathExtension == "metal"}
                         .forEach { foundShadersFilesPaths.insert($0.path) }
-            if recursiveFlag.value {
+            if isRecursive {
                 let subfoldersPaths = Set(folder.subfolders
                                                 .recursive
                                                 .map { $0.path })

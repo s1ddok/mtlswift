@@ -118,8 +118,8 @@ public struct MTLKernelEncoder {
                 }
 
                 var parametersBodyString = ""
-                let gridSizeValueString = !gridSizeParameterString.isEmpty ? ", gridSize: gridSize" : ""
-                let threadgroupSizeValueString = !threadgroupParameterString.isEmpty ? ", threadgroupSize: threadgroupSize" : ""
+                let gridSizeValueString = gridSizeParameterString.isEmpty ? "" : ", gridSize: gridSize"
+                let threadgroupSizeValueString = threadgroupParameterString.isEmpty ? "" : ", threadgroupSize: threadgroupSize"
                 for parameterIndex in 0 ..< self.parameters.count {
                     let parameterName = self.parameters[parameterIndex].name
                     let parameterSeparator = parameterIndex < self.parameters.count - 1 ? ", " : ""

@@ -145,7 +145,7 @@ public struct MTLKernelEncoder {
                 sourceBuilder.pushLevel()
                 sourceBuilder.add(line: "commandBuffer.compute { encoder in")
                 sourceBuilder.pushLevel()
-                sourceBuilder.add(line: #"encoder.label = "\#(self.swiftName)""#)
+                sourceBuilder.add(line: "encoder.label = \"\(self.swiftName)\"")
                 sourceBuilder.add(line: "self.encode(\(parametersBodyString)\(gridSizeValueString)\(threadgroupSizeValueString), using: encoder)")
                 sourceBuilder.popLevel()
                 sourceBuilder.add(line: "}")

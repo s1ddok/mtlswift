@@ -118,13 +118,23 @@ Every custom annotation starts with `mtlswift:`. The program uses this declarati
                             ...
   ```
 
-* `swiftParameteterType:`
+* `swiftParameterType:`
 
-  The name and the type of the buffers passed to the kernel.
+  The type of the buffers passed to the kernel.
 
   ```C++
-  /// mtlswift:swiftParameteterType:offset:vector_ushort2
-  /// mtlswift:swiftParameteterType:intensities:vector_float3
+  /// mtlswift:swiftParameterType:offset:vector_ushort2
+  /// mtlswift:swiftParameterType:intensities:vector_float3
+  kernel void exampleKernel(constant ushort2& offset [[ buffer(0) ]],
+                            constant float3& intensities [[buffer(1)]],
+                            ...
+  ```
+  * `swiftParameterName:`
+
+  The name of the buffers passed to the kernel.
+
+  ```C++
+  /// mtlswift:swiftParameterName:intensities:parameters
   kernel void exampleKernel(constant ushort2& offset [[ buffer(0) ]],
                             constant float3& intensities [[buffer(1)]],
                             ...

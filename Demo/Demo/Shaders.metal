@@ -82,6 +82,7 @@ kernel void contrast(texture2d<float, access::read> input [[ texture(0) ]],
 /// mtlswift:swiftName:Sharpening
 /// mtlswift:swiftParameterName:blurredInput:blurred
 /// mtlswift:dispatch:optimal(0):over:output
+/// mtlswift:accessLevel:internal
 kernel void sharpen(texture2d<float, access::read> input [[ texture(0) ]],
                     texture2d<float, access::read> blurredInput [[ texture(1) ]],
                     texture2d<float, access::write> output [[ texture(2) ]],

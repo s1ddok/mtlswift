@@ -90,7 +90,7 @@ public struct MTLKernelEncoder {
 
             switch ev.threadgroupSize {
             case .provided:
-                threadgroupParameterString = ", threadgroupSize: MTLSize"
+                threadgroupParameterString = "threadgroupSize: MTLSize, "
                 threadgroupVariableString = "let _threadgroupSize = threadgroupSize"
             case .max:
                 threadgroupVariableString = "let _threadgroupSize = self.pipelineState.max2dThreadgroupSize"

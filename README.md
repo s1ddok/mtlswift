@@ -129,7 +129,7 @@ Every custom annotation starts with `mtlswift:`. The program uses this declarati
                             constant float3& intensities [[buffer(1)]],
                             ...
   ```
-  * `swiftParameterName:`
+* `swiftParameterName:`
 
   The name of the buffers passed to the kernel.
 

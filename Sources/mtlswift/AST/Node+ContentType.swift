@@ -149,5 +149,6 @@ public extension ASTNode {
         case varTemplateSpecializationDecl = "VarTemplateSpecializationDecl"
         case whileStmt = "WhileStmt"
         case stmtExpr = "StmtExpr"
+        case breakStmt = "BreakStmt"    
     }
 }

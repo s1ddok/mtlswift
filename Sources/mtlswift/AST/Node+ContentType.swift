@@ -11,6 +11,7 @@ public extension ASTNode {
         case asTypeExpr = "AsTypeExpr"
         case asmLabelAttr = "AsmLabelAttr"
         case binaryOperator = "BinaryOperator"
+        case breakStmt = "BreakStmt" 
         case builtinTemplateDecl = "BuiltinTemplateDecl"
         case builtinType = "BuiltinType"
         case cStyleCastExpr = "CStyleCastExpr"
@@ -149,6 +150,5 @@ public extension ASTNode {
         case varTemplateSpecializationDecl = "VarTemplateSpecializationDecl"
         case whileStmt = "WhileStmt"
         case stmtExpr = "StmtExpr"
-        case breakStmt = "BreakStmt"    
     }
 }

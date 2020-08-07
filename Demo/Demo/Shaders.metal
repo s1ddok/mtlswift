@@ -20,7 +20,7 @@ constant float intensity [[function_constant(2)]];
 constant float3 luminanceWeighting = float3(0.2125, 0.7154, 0.0721);
 
 /// mtlswift:dispatch:optimal(0):over:output
-/// mtlswift:swiftParameteterType:effect:Float
+/// mtlswift:swiftParameterType:effect:Float
 kernel void saturation(texture2d<float, access::read> input [[ texture(0) ]],
                        texture2d<float, access::write> output [[ texture(1) ]],
                        constant float& effect [[ buffer(0) ]],
@@ -52,7 +52,7 @@ kernel void saturation(texture2d<float, access::read> input [[ texture(0) ]],
 
 
 /// mtlswift:dispatch:optimal(0):over:output
-/// mtlswift:swiftParameteterType:effect:Float
+/// mtlswift:swiftParameterType:effect:Float
 kernel void contrast(texture2d<float, access::read> input [[ texture(0) ]],
                      texture2d<float, access::write> output [[ texture(1) ]],
                      constant float& effect [[ buffer(0) ]],

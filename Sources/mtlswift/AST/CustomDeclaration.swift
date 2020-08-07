@@ -193,7 +193,7 @@ public enum CustomDeclaration {
     public static let swiftParameterNameDeclaration = "swiftParameterName:"
     case swiftParameterName(oldName: String, newName: String)
     
-    public static let swiftParameterTypeDeclaration = "swiftParameteterType:"
+    public static let swiftParameterTypeDeclaration = "swiftParameterType:"
     case swiftParameterType(parameter: String, type: String)
     
     public static let ignoreDeclaration = "ignore"

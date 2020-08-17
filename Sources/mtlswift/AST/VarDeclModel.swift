@@ -4,7 +4,7 @@ public struct VarDeclModel: Model {
     public var typeDeclaration: String
 
     public var functionConstantType: ASTFunctionConstant.TypeDelcaration {
-        if self.typeDeclaration.contains("_Bool") {
+        if self.typeDeclaration.contains("_Bool") || self.typeDeclaration.contains("bool") {
             return .bool
         }
 

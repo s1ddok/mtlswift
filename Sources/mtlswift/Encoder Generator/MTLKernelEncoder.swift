@@ -164,7 +164,7 @@ public struct MTLKernelEncoder {
                     if parameter.swiftTypeName == "MTLBuffer" {
                         sourceBuilder.add(line: "encoder.setBuffer(\(parameter.name), offset: 0, index: \(parameter.index))")
                     } else {
-                        sourceBuilder.add(line: "encoder.set(\(parameter.name), at: \(parameter.index))")
+                        sourceBuilder.add(line: "encoder.setValue(\(parameter.name), at: \(parameter.index))")
                     }
                 case .texture:
                     sourceBuilder.add(line: "encoder.setTexture(\(parameter.name), index: \(parameter.index))")

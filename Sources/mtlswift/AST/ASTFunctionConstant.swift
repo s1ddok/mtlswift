@@ -14,7 +14,7 @@ public struct ASTFunctionConstant {
             case .half:
                 return "UInt16"
             case .int:
-                return "Int"
+                return "Int32"
             }
         }
     }

@@ -11,6 +11,10 @@ public struct VarDeclModel: Model {
         if self.typeDeclaration.contains("ushort2") {
             return .ushort2
         }
+        
+        if self.typeDeclaration.contains("int") {
+            return .int
+        }
 
         return .float
     }

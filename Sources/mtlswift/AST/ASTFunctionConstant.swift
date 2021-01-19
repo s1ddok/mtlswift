@@ -1,7 +1,7 @@
 public struct ASTFunctionConstant {
     public enum TypeDelcaration {
         // TODO: Support all types
-        case bool, ushort2, float, half
+        case bool, ushort2, float, half, int
 
         public var swiftTypeDelcaration: String {
             switch self {
@@ -13,6 +13,8 @@ public struct ASTFunctionConstant {
                 return "Float"
             case .half:
                 return "UInt16"
+            case .int:
+                return "Int"
             }
         }
     }

@@ -12,6 +12,14 @@ public enum CustomDeclaration {
             // TODO: Check it is valid Swift identifier
             self = .swiftName(name: name)
             return
+        } else if scanner.skip(exact: CustomDeclaration.inPlaceTexture) {
+            guard let name = scanner.readWord() else {
+                print("ERROR: Failed to parse \(CustomDeclaration.inPlaceTexture), skipping: \(scanner.leftString)")
+                return nil
+            }
+
+            self = .inPlaceTexture(name: name)
+            return
         } else if scanner.skip(exact: CustomDeclaration.swiftParameterNameDeclaration) {
             guard
                 let oldName = scanner.readWord(),
@@ -186,6 +194,9 @@ public enum CustomDeclaration {
     
     public static let accessLevelDeclaration = "accessLevel:"
     case accessLevel(level: AccessLevel)
+
+    public static let inPlaceTexture = "inPlaceTexture:"
+    case inPlaceTexture(name: String)
     
     public static let swiftNameDeclaration = "swiftName:"
     case swiftName(name: String)

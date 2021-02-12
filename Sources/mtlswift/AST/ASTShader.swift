@@ -58,13 +58,17 @@ public struct ASTShader {
 
         var swiftNameLookup: [String: String] = [:]
         var swiftTypeLookup: [String: String] = [:]
+        var inPlaceTextures = [String]()
         for declaration in self.customDeclarations {
-            if case .swiftParameterName(let oldName, let newName) = declaration {
+            if case let .swiftParameterName(oldName, newName) = declaration {
                 swiftNameLookup[oldName] = newName
             }
 
-            if case .swiftParameterType(let parameter, let type) = declaration {
+            if case let .swiftParameterType(parameter, type) = declaration {
                 swiftTypeLookup[parameter] = type
+            }
+            if case let .inPlaceTexture(textureName) = declaration {
+                inPlaceTextures.append(textureName)
             }
         }
 
@@ -95,7 +99,7 @@ public struct ASTShader {
 
                 return MTLKernelEncoder.Parameter(name: name,
                                                   swiftTypeName: type,
-                                                  kind: .texture,
+                                                  kind: inPlaceTextures.contains(p.name) ? .inPlaceTexture : .texture,
                                                   index: p.index ?? -1,
                                                   defaultValueString: nil)
             case .buffer:

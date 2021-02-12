@@ -21,7 +21,7 @@ public class ASTNode {
     
     public init(parsingString inputString: String) throws {
         let scanner = StringScanner(string: inputString)
-        
+
         guard let prefix = scanner.readWord()
         else { throw Errors.parsingError }
 

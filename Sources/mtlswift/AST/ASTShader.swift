@@ -58,7 +58,7 @@ public struct ASTShader {
 
         var swiftNameLookup: [String: String] = [:]
         var swiftTypeLookup: [String: String] = [:]
-        var inPlaceTextures = [String]()
+        var inPlaceTextureNameMappings = [MTLKernelEncoder.InPlaceTextureNameMapping]()
         for declaration in self.customDeclarations {
             if case let .swiftParameterName(oldName, newName) = declaration {
                 swiftNameLookup[oldName] = newName
@@ -67,8 +67,8 @@ public struct ASTShader {
             if case let .swiftParameterType(parameter, type) = declaration {
                 swiftTypeLookup[parameter] = type
             }
-            if case let .inPlaceTexture(textureName) = declaration {
-                inPlaceTextures.append(textureName)
+            if case let .inPlaceTexture(source, destination, inPlace) = declaration {
+                inPlaceTextureNameMappings.append(.init(source: source, destination: destination, inPlace: inPlace))
             }
         }
 
@@ -96,10 +96,10 @@ public struct ASTShader {
                     print("WARNING: Swift Types are not available for texture parameters, ignoring \(type)")
                     type = "MTLTexture"
                 }
-
+                
                 return MTLKernelEncoder.Parameter(name: name,
                                                   swiftTypeName: type,
-                                                  kind: inPlaceTextures.contains(p.name) ? .inPlaceTexture : .texture,
+                                                  kind: .texture,
                                                   index: p.index ?? -1,
                                                   defaultValueString: nil)
             case .buffer:
@@ -176,7 +176,8 @@ public struct ASTShader {
                                     encodingVariants: [MTLKernelEncoder.EncodingVariant(dispatchType: type, threadgroupSize: size)],
                                     usedConstants: constants,
                                     branchingConstant: branchingConstant,
-                                    threadgroupMemoryCalculations: threadgroupMemoryCalculatiosn)
+                                    threadgroupMemoryCalculations: threadgroupMemoryCalculatiosn,
+                                    inPlaceTextureNameMappings: inPlaceTextureNameMappings)
         }
 
         return nil

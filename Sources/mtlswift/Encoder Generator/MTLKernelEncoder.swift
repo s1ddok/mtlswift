@@ -37,7 +37,7 @@ public struct MTLKernelEncoder {
         let sourceBuilder = SourceStringBuilder()
         sourceBuilder.begin()
 
-        sourceBuilder.add(line: "\(self.accessLevel.rawValue) final class \(self.swiftName) {")
+        sourceBuilder.add(line: "final \(self.accessLevel.rawValue) class \(self.swiftName) {")
         sourceBuilder.blankLine()
         sourceBuilder.pushLevel()
 

@@ -28,4 +28,12 @@ public class SourceStringBuilder {
     public func add(rawString: String) {
         result += rawString
     }
+    
+    public func sanitizeResult() {
+        self.result = self.result
+                          .replacingOccurrences(of: "float2", with: "SIMD2<Float>")
+                          .replacingOccurrences(of: "float3", with: "SIMD3<Float>")
+                          .replacingOccurrences(of: "float4", with: "SIMD4<Float>")
+                                 
+    }
 }

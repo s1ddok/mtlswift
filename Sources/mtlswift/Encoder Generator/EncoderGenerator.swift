@@ -113,6 +113,8 @@ final class EncoderGenerator {
 
              run(which("rm")!, args: [astPath.path])
         }
+        
+        builder.sanitizeResult()
 
         // Save result in a single file if output is provided.
         if let output = output {

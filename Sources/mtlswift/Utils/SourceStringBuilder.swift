@@ -37,6 +37,12 @@ public class SourceStringBuilder {
                           .replacingOccurrences(of: "float2,", with: "SIMD2<Float>,")
                           .replacingOccurrences(of: "float3,", with: "SIMD3<Float>,")
                           .replacingOccurrences(of: "float4,", with: "SIMD4<Float>,")
+                          .replacingOccurrences(of: "simd_float2)", with: "SIMD2<Float>)")
+                          .replacingOccurrences(of: "simd_float3)", with: "SIMD3<Float>)")
+                          .replacingOccurrences(of: "simd_float4)", with: "SIMD4<Float>)")
+                          .replacingOccurrences(of: "float2)", with: "SIMD2<Float>)")
+                          .replacingOccurrences(of: "float3)", with: "SIMD3<Float>)")
+                          .replacingOccurrences(of: "float4)", with: "SIMD4<Float>)")
                           
                                  
     }

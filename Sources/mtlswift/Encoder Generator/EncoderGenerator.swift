@@ -105,7 +105,6 @@ final class EncoderGenerator {
             // Save result files near the shaders file if no output is provided.
             if output == nil {
                 let filepath = metalFileURL.appendingPathExtension("swift")
-                builder.sanitizeResult()
                 try builder.result.write(to: filepath,
                                          atomically: true,
                                          encoding: .utf8)
@@ -117,7 +116,6 @@ final class EncoderGenerator {
 
         // Save result in a single file if output is provided.
         if let output = output {
-            builder.sanitizeResult()
             try builder.result.write(to: output,
                                      atomically: true,
                                      encoding: .utf8)

@@ -13,6 +13,8 @@ struct TypeSanitizer {
         let url = FileManager.default.urls(for: .documentDirectory,
                                            in: .userDomainMask)[0].appendingPathComponent("\(UUID().uuidString).swift",
                                                                                           isDirectory: false)
+        defer { try? FileManager.default.removeItem(at: url) }
+
         let swiftString = """
         import Foundation
         import simd
@@ -40,8 +42,6 @@ struct TypeSanitizer {
 
         let output = String(decoding: outputData,
                             as: UTF8.self)
-
-        try? FileManager.default.removeItem(at: url)
 
         return output == "" ? nil : output
     }

@@ -3,10 +3,6 @@ import Foundation
 @available(OSX 10.12, *)
 struct TypeSanitizer {
 
-    enum Error: Swift.Error {
-        case typeCheckingFailed(String)
-    }
-
     private init() {}
 
     static func sanitizeType(_ type: String) -> String? {

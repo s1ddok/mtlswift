@@ -37,7 +37,7 @@ struct TypeSanitizer {
                                    .readDataToEndOfFile()
 
         let output = String(decoding: outputData,
-                            as: UTF8.self)
+                            as: UTF8.self).replacingOccurrences(of: "\n", with: "")
 
         return output == "" ? nil : output
     }

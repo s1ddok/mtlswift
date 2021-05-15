@@ -91,6 +91,7 @@ public extension ASTNode {
         case metalFlatAttr = "MetalFlatAttr"
         case metalFragmentAttr = "MetalFragmentAttr"
         case metalFunctionConstantAttr = "MetalFunctionConstantAttr"
+        case metalStageInGridSizeAttr = "MetalStageInGridSizeAttr"
         case metalIdAttr = "MetalIdAttr"
         case metalInstanceIdAttr = "MetalInstanceIdAttr"
         case metalKernelAttr = "MetalKernelAttr"

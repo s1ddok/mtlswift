@@ -4,28 +4,28 @@ public class SourceStringBuilder {
     fileprivate(set) public var currentIdentation = ""
     
     public func pushLevel() {
-        currentIdentation += self.identationLevel
+        self.currentIdentation += self.identationLevel
     }
     
     public func popLevel() {
-        currentIdentation.removeLast(self.identationLevel.count)
+        self.currentIdentation.removeLast(self.identationLevel.count)
     }
     
     public var result: String = ""
     
     public func begin() {
-        result = "\n"
+        self.result = "\n"
     }
     
     public func add(line: String) {
-        result += self.currentIdentation + line + "\n"
+        self.result += self.currentIdentation + line + "\n"
     }
 
     public func blankLine() {
-        result += "\n"
+        self.result += "\n"
     }
 
     public func add(rawString: String) {
-        result += rawString
+        self.result += rawString
     }
 }

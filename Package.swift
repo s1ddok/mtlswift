@@ -6,8 +6,8 @@ import PackageDescription
 let package = Package(
     name: "mtlswift",
     products: [
-        Product.executable(name: "mtlswift",
-                           targets: ["mtlswift"])
+        .executable(name: "mtlswift",
+                    targets: ["mtlswift"])
     ],
     dependencies: [
         .package(url: "https://github.com/apple/swift-argument-parser",

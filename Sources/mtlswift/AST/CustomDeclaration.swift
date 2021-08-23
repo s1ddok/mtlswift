@@ -34,8 +34,12 @@ public enum CustomDeclaration {
                 return nil
             }
 
-            let swiftTypeName = scanner.leftString
+            var swiftTypeName = scanner.leftString
                                        .trimmingCharacters(in: .whitespacesAndNewlines)
+            if #available(OSX 10.12, *),
+               let checkedType = TypeSanitizer.sanitizeType(swiftTypeName) {
+                swiftTypeName = checkedType
+            }
             
             // TODO: Check these are valid Swift identifiers
             self = .swiftParameterType(parameter: parameterName, type: swiftTypeName)

@@ -1,0 +1,14 @@
+{
+  "pins" : [
+    {
+      "identity" : "alloy",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/s1ddok/Alloy",
+      "state" : {
+        "branch" : "master",
+        "revision" : "601ed05dcf89108aaf6f652fd38596228e827e91"
+      }
+    }
+  ],
+  "version" : 2
+}

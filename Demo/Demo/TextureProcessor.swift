@@ -68,8 +68,8 @@ class TextureProcessor {
             
             let blurredImage = MPSTemporaryImage(commandBuffer: commandBuffer,
                                                  textureDescriptor: temporaryDescriptor)
-            self.gaussianBlur(sourceTexture: temporaryImage2.texture,
-                              destinationTexture: blurredImage.texture,
+            self.gaussianBlur(source: temporaryImage2.texture,
+                              destination: blurredImage.texture,
                               in: commandBuffer)
             
             self.sharpen(input: temporaryImage2.texture,

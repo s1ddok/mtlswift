@@ -69,7 +69,7 @@ final class EncoderGenerator {
                     currentLevel -= 1
                 }
 
-                guard extractingLevel.1 != "<<<NULL>>>"
+                guard extractingLevel.1 != "<<<NULL>>>" && extractingLevel.1 != "<undeserialized declarations>"
                 else { continue }
 
                 let newChild = try ASTNode(parsingString: extractingLevel.1)

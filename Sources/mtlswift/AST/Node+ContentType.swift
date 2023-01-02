@@ -78,6 +78,7 @@ public extension ASTNode {
         case functionTemplateDecl = "FunctionTemplateDecl"
         case ifStmt = "IfStmt"
         case implicitCastExpr = "ImplicitCastExpr"
+        case importDecl = "ImportDecl"
         case initListExpr = "InitListExpr"
         case injectedClassNameType = "InjectedClassNameType"
         case integerLiteral = "IntegerLiteral"

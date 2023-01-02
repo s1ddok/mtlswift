@@ -4,6 +4,5 @@
 /*.xcodeproj
 *.xcuserstate
 *.xcworkspacedata
-*.plist
 .swiftpm/
 

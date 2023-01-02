@@ -1,8 +1,9 @@
 .DS_Store
 /.build
 /Packages
-/Demo/Pods
 /*.xcodeproj
 *.xcuserstate
 *.xcworkspacedata
 *.plist
+.swiftpm/
+

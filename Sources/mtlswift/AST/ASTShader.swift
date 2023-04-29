@@ -58,13 +58,17 @@ public struct ASTShader {
 
         var swiftNameLookup: [String: String] = [:]
         var swiftTypeLookup: [String: String] = [:]
+        var inPlaceTextureNameMappings = [MTLKernelEncoder.InPlaceTextureNameMapping]()
         for declaration in self.customDeclarations {
-            if case .swiftParameterName(let oldName, let newName) = declaration {
+            if case let .swiftParameterName(oldName, newName) = declaration {
                 swiftNameLookup[oldName] = newName
             }
 
-            if case .swiftParameterType(let parameter, let type) = declaration {
+            if case let .swiftParameterType(parameter, type) = declaration {
                 swiftTypeLookup[parameter] = type
+            }
+            if case let .inPlaceTexture(source, destination, inPlace) = declaration {
+                inPlaceTextureNameMappings.append(.init(source: source, destination: destination, inPlace: inPlace))
             }
         }
 
@@ -92,7 +96,7 @@ public struct ASTShader {
                     print("WARNING: Swift Types are not available for texture parameters, ignoring \(type)")
                     type = "MTLTexture"
                 }
-
+                
                 return MTLKernelEncoder.Parameter(name: name,
                                                   swiftTypeName: type,
                                                   kind: .texture,
@@ -172,7 +176,8 @@ public struct ASTShader {
                                     encodingVariants: [MTLKernelEncoder.EncodingVariant(dispatchType: type, threadgroupSize: size)],
                                     usedConstants: constants,
                                     branchingConstant: branchingConstant,
-                                    threadgroupMemoryCalculations: threadgroupMemoryCalculatiosn)
+                                    threadgroupMemoryCalculations: threadgroupMemoryCalculatiosn,
+                                    inPlaceTextureNameMappings: inPlaceTextureNameMappings)
         }
 
         return nil

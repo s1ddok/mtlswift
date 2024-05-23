@@ -26,7 +26,6 @@ final class EncoderGenerator {
             process.arguments = ["-sdk", "iphoneos", "metal",
                                  "-Xclang", "-ast-dump",
                                  "-E",
-                                 "-Xclang", "-fno-color-diagnostics",
                                  "-fno-color-diagnostics",
                                  metalFileURL.path]
             process.standardOutput = outputHandle

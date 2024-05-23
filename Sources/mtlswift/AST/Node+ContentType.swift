@@ -62,6 +62,7 @@ public extension ASTNode {
         case destructor = "Destructor"
         case elaboratedType = "ElaboratedType"
         case enableIfAttr = "EnableIfAttr"
+        case EmptyDecl = "EmptyDecl"
         case enumConstantDecl = "EnumConstantDecl"
         case enumDecl = "EnumDecl"
         case enumType = "EnumType"

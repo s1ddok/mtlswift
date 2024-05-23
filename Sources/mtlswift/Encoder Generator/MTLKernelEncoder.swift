@@ -192,6 +192,8 @@ public struct MTLKernelEncoder {
             case .none:
                 sourceBuilder.add(line: "encoder.setComputePipelineState(self.pipelineState)")
 
+            case .constant(let x, let y, let z):
+                sourceBuilder.add(line: "encoder.dispatchThreadgroups(.init(width: \(x), height: \(y), depth: \(z)), threadsPerThreadgroup: _threadgroupSize)")
             // MARK: Even dispatching
             case .even(parameters: .provided):
                 sourceBuilder.add(line: "encoder.dispatch2d(state: self.pipelineState, covering: gridSize\(threadgroupExpressionString))")

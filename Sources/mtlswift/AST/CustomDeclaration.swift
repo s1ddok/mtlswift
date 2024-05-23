@@ -72,6 +72,11 @@ public enum CustomDeclaration {
             if scanner.skip(exact: CustomDeclaration.noneDispatchDeclaration) {
                 self = .dispatchType(type: .none)
                 return
+            } else if scanner.skip(exact: CustomDeclaration.constantDispatchDeclaration) {
+                if let xyz = scanner.readXYZ() {
+                    self = .dispatchType(type: .constant(x: xyz.x, y: xyz.y, z: xyz.z))
+                    return
+                }
             } else if scanner.skip(exact: CustomDeclaration.exactDispatchDeclaration) {
                 scanner.skipWhiteSpaces()
                 if scanner.skip(exact: CustomDeclaration.providedDispatchParameterDeclaration) {
@@ -177,6 +182,7 @@ public enum CustomDeclaration {
     
     public static let dispatchTypeDeclaration = "dispatch:"
     public static let noneDispatchDeclaration = "none"
+    public static let constantDispatchDeclaration = "constant:"
     public static let evenDispatchDeclaration = "even:"
     public static let exactDispatchDeclaration = "exact:"
     public static let optimalDispatchDeclaration = "optimal"

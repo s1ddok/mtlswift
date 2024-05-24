@@ -193,6 +193,7 @@ public struct MTLKernelEncoder {
                 sourceBuilder.add(line: "encoder.setComputePipelineState(self.pipelineState)")
 
             case .constant(let x, let y, let z):
+                sourceBuilder.add(line: "encoder.setComputePipelineState(self.pipelineState)")
                 sourceBuilder.add(line: "encoder.dispatchThreadgroups(.init(width: \(x), height: \(y), depth: \(z)), threadsPerThreadgroup: _threadgroupSize)")
             // MARK: Even dispatching
             case .even(parameters: .provided):

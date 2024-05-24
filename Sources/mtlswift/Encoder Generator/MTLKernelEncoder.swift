@@ -247,13 +247,13 @@ public struct MTLKernelEncoder {
         // MARK: Declare static constants
         for (idx, ev) in self.encodingVariants.enumerated() {
             if case .constant(let x, let y, let z) = ev.threadgroupSize {
-                sourceBuilder.add(line: "private static let threadgroupSize\(idx) = MTLSize(width: \(x), height: \(y), depth: \(z))")
+                sourceBuilder.add(line: "static let threadgroupSize\(idx) = MTLSize(width: \(x), height: \(y), depth: \(z))")
             }
 
             switch ev.dispatchType {
             case .even(parameters: .constant(let x, let y, let z)),
                  .exact(parameters: .constant(let x, let y, let z)):
-                sourceBuilder.add(line: "private static let gridSize\(idx) = MTLSize(width: \(x), height: \(y), depth: \(z))")
+                sourceBuilder.add(line: "static let gridSize\(idx) = MTLSize(width: \(x), height: \(y), depth: \(z))")
             default: ()
             }
         }

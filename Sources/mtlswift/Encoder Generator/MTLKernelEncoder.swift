@@ -1,6 +1,6 @@
 public struct MTLKernelEncoder {
 
-    public struct Parameter {
+    public struct Parameter: Hashable {
         public enum Kind {
             case texture, buffer, sampler, threadgroupMemory
         }
@@ -11,6 +11,12 @@ public struct MTLKernelEncoder {
         public var index: Int
 
         public var defaultValueString: String? = nil
+    }
+    
+    public struct InPlaceTextureNameMapping {
+        public let source: String
+        public let destination: String
+        public let inPlace: String
     }
 
     public enum ThreadgroupMemoryLengthCalculation {
@@ -32,6 +38,7 @@ public struct MTLKernelEncoder {
     public var usedConstants: [ASTFunctionConstant]
     public var branchingConstant: ASTFunctionConstant?
     public var threadgroupMemoryCalculations: [ThreadgroupMemoryLengthCalculation]
+    public var inPlaceTextureNameMappings: [InPlaceTextureNameMapping]
 
     public var shaderString: String {
         let sourceBuilder = SourceStringBuilder()
@@ -45,19 +52,34 @@ public struct MTLKernelEncoder {
             sourceBuilder.add(line: "\(self.accessLevel.rawValue) let \(bc.name): \(bc.type.swiftTypeDelcaration)")
         }
 
+        let containsInPlaceTextures = !self.inPlaceTextureNameMappings.isEmpty
+
         sourceBuilder.blankLine()
         sourceBuilder.add(line: "\(self.accessLevel.rawValue) let pipelineState: MTLComputePipelineState")
+        if containsInPlaceTextures {
+            sourceBuilder.add(line: "\(self.accessLevel.rawValue) let textureCopy: TextureCopy")
+        }
         sourceBuilder.blankLine()
 
         if self.usedConstants.isEmpty && self.branchingConstant == nil {
             // MARK: Generate inits
-            sourceBuilder.add(line: "\(self.accessLevel.rawValue) init(library: MTLLibrary) throws {")
+            if containsInPlaceTextures {
+                sourceBuilder.add(line: "\(self.accessLevel.rawValue) init(library: MTLLibrary, textureCopy: TextureCopy) throws {")
+            } else {
+                sourceBuilder.add(line: "\(self.accessLevel.rawValue) init(library: MTLLibrary) throws {")
+            }
             sourceBuilder.pushLevel()
 
             sourceBuilder.add(line: "self.pipelineState = try library.computePipelineState(function: \"\(self.shaderName)\")")
         } else {
             let parameterString = ", " + self.usedConstants.map { "\($0.name): \($0.type.swiftTypeDelcaration)" }.joined(separator: ", ")
-            sourceBuilder.add(line: "\(self.accessLevel.rawValue) init(library: MTLLibrary\(self.usedConstants.isEmpty ? "" : parameterString)) throws {")
+
+            if containsInPlaceTextures {
+                sourceBuilder.add(line: "\(self.accessLevel.rawValue) init(library: MTLLibrary, textureCopy: TextureCopy\(self.usedConstants.isEmpty ? "" : parameterString)) throws {")
+            } else {
+                sourceBuilder.add(line: "\(self.accessLevel.rawValue) init(library: MTLLibrary\(self.usedConstants.isEmpty ? "" : parameterString)) throws {")
+            }
+
             sourceBuilder.pushLevel()
 
             sourceBuilder.add(line: "let constantValues = MTLFunctionConstantValues()")
@@ -74,6 +96,10 @@ public struct MTLKernelEncoder {
             }
 
             sourceBuilder.add(line: "self.pipelineState = try library.computePipelineState(function: \"\(self.shaderName)\", constants: constantValues)")
+        }
+
+        if containsInPlaceTextures {
+            sourceBuilder.add(line: "self.textureCopy = textureCopy")
         }
 
         // MARK: Balancing for init
@@ -113,11 +139,48 @@ public struct MTLKernelEncoder {
                 sourceBuilder.add(line: "\(self.accessLevel.rawValue) func encode(\(gridSizeParameterString)\(threadgroupParameterString)using encoder: MTLComputeCommandEncoder) {")
             } else {
                 var parameterString = ""
+                var filteredParameterString = ""
+                
+                let inPlaceParameters = self.inPlaceTextureNameMappings.map { mapping -> Parameter in
+                    return .init(name: mapping.inPlace,
+                                 swiftTypeName: "MTLTexture",
+                                 kind: .texture,
+                                 index: -1)
+                }
+                let sourceParameters = self.inPlaceTextureNameMappings.map { mapping -> Parameter in
+                    let index = self.parameters.first(where: { $0.name == mapping.source })?.index ?? 0
+                    return .init(name: mapping.source,
+                                 swiftTypeName: "MTLTexture",
+                                 kind: .texture,
+                                 index: index)
+                }
+                let destinationParameters = self.inPlaceTextureNameMappings.map { mapping -> Parameter in
+                    let index = self.parameters.first(where: { $0.name == mapping.destination })?.index ?? 0
+                    return .init(name: mapping.destination,
+                                 swiftTypeName: "MTLTexture",
+                                 kind: .texture,
+                                 index: index)
+                }
+                let filteredParameters = containsInPlaceTextures
+                                       ? inPlaceParameters + Set(self.parameters).subtracting(Set(sourceParameters))
+                                                                                 .subtracting(Set(destinationParameters))
+                                                                                 .map { $0 }
+                                       : self.parameters
+                
                 for parameter in self.parameters {
                     parameterString += "\(parameter.name): \(parameter.swiftTypeName), "
                 }
+                
+                for filteredParameter in filteredParameters {
+                    filteredParameterString += "\(filteredParameter.name): \(filteredParameter.swiftTypeName), "
+                }
+                
+                if containsInPlaceTextures {
+                    print(2)
+                }
 
                 var parametersBodyString = ""
+                var filteredParametersBodyString = ""
                 let gridSizeValueString = gridSizeParameterString.isEmpty ? "" : ", gridSize: gridSize"
                 let threadgroupSizeValueString = threadgroupParameterString.isEmpty ? "" : ", threadgroupSize: threadgroupSize"
                 for parameterIndex in 0 ..< self.parameters.count {
@@ -125,24 +188,57 @@ public struct MTLKernelEncoder {
                     let parameterSeparator = parameterIndex < self.parameters.count - 1 ? ", " : ""
                     parametersBodyString += parameterName + ": " + parameterName + parameterSeparator
                 }
+                for parameterIndex in 0 ..< filteredParameters.count {
+                    let parameterName = filteredParameters[parameterIndex].name
+                    let parameterSeparator = parameterIndex < filteredParameters.count - 1 ? ", " : ""
+                    filteredParametersBodyString += parameterName + ": " + parameterName + parameterSeparator
+                }
 
                 // Call as function in commandBuffer
-                sourceBuilder.add(line: "\(self.accessLevel.rawValue) func callAsFunction(\(parameterString)\(gridSizeParameterString)\(threadgroupParameterString)in commandBuffer: MTLCommandBuffer) {")
+                sourceBuilder.add(line: "\(self.accessLevel.rawValue) func callAsFunction(\(filteredParameterString)\(gridSizeParameterString)\(threadgroupParameterString)in commandBuffer: MTLCommandBuffer) {")
                 sourceBuilder.pushLevel()
-                sourceBuilder.add(line: "self.encode(\(parametersBodyString)\(gridSizeValueString)\(threadgroupSizeValueString), in: commandBuffer)")
+                sourceBuilder.add(line: "self.encode(\(filteredParametersBodyString)\(gridSizeValueString)\(threadgroupSizeValueString), in: commandBuffer)")
                 sourceBuilder.popLevel()
                 sourceBuilder.add(line: "}")
 
-                // Call as function using encoder
-                sourceBuilder.add(line: "\(self.accessLevel.rawValue) func callAsFunction(\(parameterString)\(gridSizeParameterString)\(threadgroupParameterString)using encoder: MTLComputeCommandEncoder) {")
-                sourceBuilder.pushLevel()
-                sourceBuilder.add(line: "self.encode(\(parametersBodyString)\(gridSizeValueString)\(threadgroupSizeValueString), using: encoder)")
-                sourceBuilder.popLevel()
-                sourceBuilder.add(line: "}")
+                if !containsInPlaceTextures {
+                    // Call as function using encoder
+                    sourceBuilder.add(line: "\(self.accessLevel.rawValue) func callAsFunction(\(filteredParameterString)\(gridSizeParameterString)\(threadgroupParameterString)using encoder: MTLComputeCommandEncoder) {")
+                    sourceBuilder.pushLevel()
+                    sourceBuilder.add(line: "self.encode(\(filteredParametersBodyString)\(gridSizeValueString)\(threadgroupSizeValueString), using: encoder)")
+                    sourceBuilder.popLevel()
+                    sourceBuilder.add(line: "}")
+                }
 
                 // Encode in commandBuffer
-                sourceBuilder.add(line: "\(self.accessLevel.rawValue) func encode(\(parameterString)\(gridSizeParameterString)\(threadgroupParameterString)in commandBuffer: MTLCommandBuffer) {")
+                sourceBuilder.add(line: "\(self.accessLevel.rawValue) func encode(\(filteredParameterString)\(gridSizeParameterString)\(threadgroupParameterString)in commandBuffer: MTLCommandBuffer) {")
                 sourceBuilder.pushLevel()
+                
+                if containsInPlaceTextures {
+                    for inPlaceTextureNameMapping in self.inPlaceTextureNameMappings {
+                        let sourceName = inPlaceTextureNameMapping.source
+                        let destinationName = inPlaceTextureNameMapping.destination
+                        let inPlaceName = inPlaceTextureNameMapping.inPlace
+                        let imageCopyName = "\(sourceName)CopyImage"
+                        let originalTextureName = "\(sourceName)OriginalTexture"
+
+                        sourceBuilder.add(line: "var \(sourceName) = \(inPlaceName)")
+                        sourceBuilder.add(line: "let \(destinationName) = \(inPlaceName)")
+                        sourceBuilder.add(line: "if !self.pipelineState.device.supports(feature: .readWriteTextures(\(sourceName).pixelFormat)) {")
+                        sourceBuilder.pushLevel()
+
+                        sourceBuilder.add(line: "let \(originalTextureName) = \(sourceName)")
+                        sourceBuilder.add(line: "let \(imageCopyName) = \(sourceName).matchingTemporaryImage(commandBuffer: commandBuffer)")
+                        sourceBuilder.add(line: "defer { \(imageCopyName).readCount = .zero }")
+                        sourceBuilder.add(line: "\(sourceName) = \(imageCopyName).texture")
+                        sourceBuilder.add(line: "self.textureCopy(source: \(originalTextureName), destination: \(sourceName), in: commandBuffer)")
+                        sourceBuilder.add(line: "}")
+                        sourceBuilder.popLevel()
+
+                        sourceBuilder.blankLine()
+                    }
+                }
+
                 sourceBuilder.add(line: "commandBuffer.compute { encoder in")
                 sourceBuilder.pushLevel()
                 sourceBuilder.add(line: "encoder.label = \"\(self.swiftName)\"")
@@ -153,7 +249,8 @@ public struct MTLKernelEncoder {
                 sourceBuilder.add(line: "}")
 
                 // Ecode using encoder
-                sourceBuilder.add(line: "\(self.accessLevel.rawValue) func encode(\(parameterString)\(gridSizeParameterString)\(threadgroupParameterString)using encoder: MTLComputeCommandEncoder) {")
+                let accessLevel = containsInPlaceTextures ? "private" : "\(self.accessLevel.rawValue)"
+                sourceBuilder.add(line: "\(accessLevel) func encode(\(parameterString)\(gridSizeParameterString)\(threadgroupParameterString)using encoder: MTLComputeCommandEncoder) {")
             }
             sourceBuilder.pushLevel()
             sourceBuilder.add(line: threadgroupVariableString)
@@ -204,7 +301,7 @@ public struct MTLKernelEncoder {
 
             case .even(parameters: .over(let argument)):
                 if let targetParameter = self.parameters.first(where: { $0.name == argument }),
-                   targetParameter.kind == .texture {
+                   (targetParameter.kind == .texture) {
                     sourceBuilder.add(line: "encoder.dispatch2d(state: self.pipelineState, covering: \(targetParameter.name).size\(threadgroupExpressionString))")
                 } else {
                     fatalError("Could not generate dispatching over parameter \(argument)")
@@ -219,7 +316,7 @@ public struct MTLKernelEncoder {
 
             case .exact(parameters: .over(let argument)):
                 if let targetParameter = self.parameters.first(where: { $0.name == argument }),
-                    targetParameter.kind == .texture {
+                   (targetParameter.kind == .texture) {
                     sourceBuilder.add(line: "encoder.dispatch2d(state: self.pipelineState, exactly: \(targetParameter.name).size\(threadgroupExpressionString))")
                 } else {
                     print("Could not generate dispatching over parameter \(argument)")
@@ -234,7 +331,7 @@ public struct MTLKernelEncoder {
                 sourceBuilder.add(line: "if self.\(bc.name) { encoder.dispatch2d(state: self.pipelineState, exactly: \(self.swiftName).gridSize\(idx)\(threadgroupExpressionString)) } else { encoder.dispatch2d(state: self.pipelineState, covering: \(self.swiftName).gridSize\(idx)\(threadgroupExpressionString)) }")
             case .optimal(_, parameters: .over(let argument)):
                 if let targetParameter = self.parameters.first(where: { $0.name == argument }),
-                   targetParameter.kind == .texture {
+                   (targetParameter.kind == .texture) {
                     let bc = self.branchingConstant!
                     sourceBuilder.add(line: "if self.\(bc.name) { encoder.dispatch2d(state: self.pipelineState, exactly: \(targetParameter.name).size\(threadgroupExpressionString)) } else { encoder.dispatch2d(state: self.pipelineState, covering: \(targetParameter.name).size\(threadgroupExpressionString)) }")
                 } else { print("Could not generate dispatching over parameter \(argument)") }

@@ -33,9 +33,9 @@ public enum CustomDeclaration {
                 print("ERROR: Failed to parse \(CustomDeclaration.swiftParameterTypeDeclaration), skipping: \(scanner.leftString)")
                 return nil
             }
-
+            
             let swiftTypeName = scanner.leftString
-                                       .trimmingCharacters(in: .whitespacesAndNewlines)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
             
             // TODO: Check these are valid Swift identifiers
             self = .swiftParameterType(parameter: parameterName, type: swiftTypeName)
@@ -112,7 +112,7 @@ public enum CustomDeclaration {
                     assertionFailure("You can't have optimal dispatch without specifying branching constant")
                     return nil
                 }
-
+                
                 scanner.skipWhiteSpaces()
                 if scanner.skip(exact: CustomDeclaration.providedDispatchParameterDeclaration) {
                     self = .dispatchType(type: .optimal(branchConstantIndex: functionConstantIndex, parameters: .provided))
@@ -126,6 +126,30 @@ public enum CustomDeclaration {
                     self = .dispatchType(type: .optimal(branchConstantIndex: functionConstantIndex, parameters: .constant(x: xyz.x, y: xyz.y, z: xyz.z)))
                     return
                 }
+            } else if scanner.skip(exact: CustomDeclaration.indirectDispatchDeclaration) {
+                var parameters = DispatchType.IndirectParameters.constant(offset: 0)
+                
+                if scanner.skip(exact: ":") {
+                    if scanner.skip(exact: CustomDeclaration.offsetDeclaration) {
+                        if scanner.skip(exact: CustomDeclaration.providedOffsetDelcaration) {
+                            var defaultOffset = 0
+                            if scanner.skip(exact: ":"), let offset = scanner.readInt() {
+                                defaultOffset = offset
+                            }
+                            parameters = .provided(default: defaultOffset)
+                        } else if let offset = scanner.readInt() {
+                            parameters = DispatchType.IndirectParameters.constant(offset: offset)
+                        } else {
+                            print("Something is wrong with indirect dispatch declaration")
+                            return nil
+                        }
+                    } else {
+                        print("Looks like indirect dispatch has a floating semicolon, assuming offset 0.")
+                    }
+                }
+                
+                self = .dispatchType(type: .indirect(parameters: parameters))
+                return
             }
         } else if scanner.skip(exact: CustomDeclaration.threadgroupMemoryDeclaration) {
             guard let index = scanner.readBracketedInt(), scanner.skip(exact: ":") else {
@@ -186,6 +210,9 @@ public enum CustomDeclaration {
     public static let evenDispatchDeclaration = "even:"
     public static let exactDispatchDeclaration = "exact:"
     public static let optimalDispatchDeclaration = "optimal"
+    public static let indirectDispatchDeclaration = "indirect"
+    public static let offsetDeclaration = "offset:"
+    public static let providedOffsetDelcaration = "provided"
     public static let overDispatchParameterDeclaration = "over:"
     public static let providedDispatchParameterDeclaration = "provided"
     case dispatchType(type: DispatchType)

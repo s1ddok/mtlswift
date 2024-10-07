@@ -19,6 +19,7 @@ public struct ASTShader {
         public var name: String
         public var kind: Kind
         public var index: Int?
+        public var optional: Bool
         
         public var description: String {
             return "parameter \(name): \(kind)(\(index ?? -1))"
@@ -100,7 +101,7 @@ public struct ASTShader {
                                                   defaultValueString: nil)
             case .buffer:
                 let name = swiftNameLookup[p.name, default: p.name]
-                let type = swiftTypeLookup[p.name, default: "MTLBuffer"]
+                let type = swiftTypeLookup[p.name, default: p.optional ? "MTLBuffer?" : "MTLBuffer"]
 
                 return MTLKernelEncoder.Parameter(name: name,
                                                   swiftTypeName: type,

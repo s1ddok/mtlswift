@@ -101,16 +101,22 @@ public struct MTLKernelEncoder {
             }
 
             var gridSizeParameterString = ""
+            var gridBufferParameterString = ""
             switch ev.dispatchType {
             case .exact(parameters: .provided),
                  .even(parameters: .provided),
                  .optimal(_, parameters: .provided):
                 gridSizeParameterString = "gridSize: MTLSize, "
+            case .indirect(let parameters):
+                switch parameters {
+                case .constant: gridBufferParameterString = "gridBuffer: MTLBuffer, "
+                case .provided(let defaultOffset): gridBufferParameterString = "gridBuffer: MTLBuffer, gridBufferOffset: Int = \(defaultOffset), "
+                }
             default: ()
             }
 
             if self.parameters.isEmpty {
-                sourceBuilder.add(line: "\(self.accessLevel.rawValue) func encode(\(gridSizeParameterString)\(threadgroupParameterString)using encoder: MTLComputeCommandEncoder) {")
+                sourceBuilder.add(line: "\(self.accessLevel.rawValue) func encode(\(gridSizeParameterString)\(gridBufferParameterString)\(threadgroupParameterString)using encoder: MTLComputeCommandEncoder) {")
             } else {
                 var parameterString = ""
                 for parameter in self.parameters {
@@ -120,6 +126,10 @@ public struct MTLKernelEncoder {
                 var parametersBodyString = ""
                 let gridSizeValueString = gridSizeParameterString.isEmpty ? "" : ", gridSize: gridSize"
                 let threadgroupSizeValueString = threadgroupParameterString.isEmpty ? "" : ", threadgroupSize: threadgroupSize"
+                var gridBufferValueString = gridBufferParameterString.isEmpty ? "" : ", gridBuffer: gridBuffer"
+                if gridBufferParameterString.contains("offset") {
+                    gridBufferValueString += ", gridBufferOffset: gridBufferOffset"
+                }
                 for parameterIndex in 0 ..< self.parameters.count {
                     let parameterName = self.parameters[parameterIndex].name
                     let parameterSeparator = parameterIndex < self.parameters.count - 1 ? ", " : ""
@@ -127,33 +137,33 @@ public struct MTLKernelEncoder {
                 }
 
                 // Call as function in commandBuffer
-                sourceBuilder.add(line: "\(self.accessLevel.rawValue) func callAsFunction(\(parameterString)\(gridSizeParameterString)\(threadgroupParameterString)in commandBuffer: MTLCommandBuffer) {")
+                sourceBuilder.add(line: "\(self.accessLevel.rawValue) func callAsFunction(\(parameterString)\(gridSizeParameterString)\(gridBufferParameterString)\(threadgroupParameterString)in commandBuffer: MTLCommandBuffer) {")
                 sourceBuilder.pushLevel()
-                sourceBuilder.add(line: "self.encode(\(parametersBodyString)\(gridSizeValueString)\(threadgroupSizeValueString), in: commandBuffer)")
+                sourceBuilder.add(line: "self.encode(\(parametersBodyString)\(gridSizeValueString)\(gridBufferValueString)\(threadgroupSizeValueString), in: commandBuffer)")
                 sourceBuilder.popLevel()
                 sourceBuilder.add(line: "}")
 
                 // Call as function using encoder
-                sourceBuilder.add(line: "\(self.accessLevel.rawValue) func callAsFunction(\(parameterString)\(gridSizeParameterString)\(threadgroupParameterString)using encoder: MTLComputeCommandEncoder) {")
+                sourceBuilder.add(line: "\(self.accessLevel.rawValue) func callAsFunction(\(parameterString)\(gridSizeParameterString)\(gridBufferParameterString)\(threadgroupParameterString)using encoder: MTLComputeCommandEncoder) {")
                 sourceBuilder.pushLevel()
-                sourceBuilder.add(line: "self.encode(\(parametersBodyString)\(gridSizeValueString)\(threadgroupSizeValueString), using: encoder)")
+                sourceBuilder.add(line: "self.encode(\(parametersBodyString)\(gridSizeValueString)\(gridBufferValueString)\(threadgroupSizeValueString), using: encoder)")
                 sourceBuilder.popLevel()
                 sourceBuilder.add(line: "}")
 
                 // Encode in commandBuffer
-                sourceBuilder.add(line: "\(self.accessLevel.rawValue) func encode(\(parameterString)\(gridSizeParameterString)\(threadgroupParameterString)in commandBuffer: MTLCommandBuffer) {")
+                sourceBuilder.add(line: "\(self.accessLevel.rawValue) func encode(\(parameterString)\(gridSizeParameterString)\(gridBufferParameterString)\(threadgroupParameterString)in commandBuffer: MTLCommandBuffer) {")
                 sourceBuilder.pushLevel()
                 sourceBuilder.add(line: "commandBuffer.compute { encoder in")
                 sourceBuilder.pushLevel()
                 sourceBuilder.add(line: "encoder.label = \"\(self.swiftName)\"")
-                sourceBuilder.add(line: "self.encode(\(parametersBodyString)\(gridSizeValueString)\(threadgroupSizeValueString), using: encoder)")
+                sourceBuilder.add(line: "self.encode(\(parametersBodyString)\(gridSizeValueString)\(gridBufferValueString)\(threadgroupSizeValueString), using: encoder)")
                 sourceBuilder.popLevel()
                 sourceBuilder.add(line: "}")
                 sourceBuilder.popLevel()
                 sourceBuilder.add(line: "}")
 
                 // Ecode using encoder
-                sourceBuilder.add(line: "\(self.accessLevel.rawValue) func encode(\(parameterString)\(gridSizeParameterString)\(threadgroupParameterString)using encoder: MTLComputeCommandEncoder) {")
+                sourceBuilder.add(line: "\(self.accessLevel.rawValue) func encode(\(parameterString)\(gridSizeParameterString)\(gridBufferParameterString)\(threadgroupParameterString)using encoder: MTLComputeCommandEncoder) {")
             }
             sourceBuilder.pushLevel()
             sourceBuilder.add(line: threadgroupVariableString)
@@ -161,7 +171,7 @@ public struct MTLKernelEncoder {
             for parameter in self.parameters {
                 switch parameter.kind {
                 case .buffer:
-                    if parameter.swiftTypeName == "MTLBuffer" {
+                    if parameter.swiftTypeName == "MTLBuffer" || parameter.swiftTypeName == "MTLBuffer?" {
                         sourceBuilder.add(line: "encoder.setBuffer(\(parameter.name), offset: 0, index: \(parameter.index))")
                     } else {
                         sourceBuilder.add(line: "encoder.setValue(\(parameter.name), at: \(parameter.index))")
@@ -238,6 +248,12 @@ public struct MTLKernelEncoder {
                     let bc = self.branchingConstant!
                     sourceBuilder.add(line: "if self.\(bc.name) { encoder.dispatch2d(state: self.pipelineState, exactly: \(targetParameter.name).size\(threadgroupExpressionString)) } else { encoder.dispatch2d(state: self.pipelineState, covering: \(targetParameter.name).size\(threadgroupExpressionString)) }")
                 } else { print("Could not generate dispatching over parameter \(argument)") }
+            case .indirect(let parameters):
+                if case let .constant(offset) = parameters {
+                    sourceBuilder.add(line: "let gridBufferOffset = \(offset)")
+                }
+                sourceBuilder.add(line: "encoder.setComputePipelineState(self.pipelineState)")
+                sourceBuilder.add(line: "encoder.dispatchThreadgroups(indirectBuffer: gridBuffer, indirectBufferOffset: gridBufferOffset, threadsPerThreadgroup: _threadgroupSize)")
             }
 
             sourceBuilder.popLevel()

@@ -76,6 +76,10 @@ public class StringScanner {
         return try! self.read(pattern: "^(\\w+)")
     }
     
+    public func readString() -> String? {
+        return try! self.read(pattern: "\"(.*)\"")
+    }
+    
     public func readInt() -> Int? {
         return Int(try! self.read(pattern:  "^(\\d+)") ?? "")
     }

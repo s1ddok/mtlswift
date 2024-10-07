@@ -26,10 +26,23 @@ public class ASTNode {
         else { throw Errors.parsingError }
 
         guard let contentType = ContentType(rawValue: prefix)
-        else { throw Errors.contentTypeCreationFailed }
+        else {
+            self.contentType = .unknown
+            Swift.print("Warning: failed to parse \(inputString)")
+            return
+        }
         self.contentType = contentType
         
         switch self.contentType {
+        case .metalHostNameAttr:
+            scanner.skipWhiteSpaces()
+            scanner.skipHexIfAny()
+            scanner.skipWhiteSpaces()
+            scanner.skipSlocIfAny()
+            scanner.skipWhiteSpaces()
+            
+            let namespaceName = scanner.readString()
+            self.stringValue = namespaceName
         case .namespaceDecl:
             scanner.skipWhiteSpaces()
             scanner.skipHexIfAny()
@@ -191,8 +204,16 @@ public class ASTNode {
                                     .metalFragmentAttr,
                                     .metalVertexAttr])
         else { return nil }
+        
+        
+        let hostName = self.children(of: .metalHostNameAttr).first?.stringValue
 
         let parameterNode = self.children(of: .parmVarDecl)
+        
+        // this is to filter the parent of template kernels
+        if parameterNode.filter({ $0.stringValue == "referenced" }).count > 1 && hostName == nil {
+            return nil
+        }
         var declarations: [CustomDeclaration] = []
 
         let parameters: [ASTShader.Parameter] = parameterNode.map { pn in
@@ -226,7 +247,7 @@ public class ASTNode {
                                        .metalLocalIndexAttr])
                         .first?.children.first!.integerValue!
 
-            return ASTShader.Parameter(name: pn.stringValue ?? "_", kind: kind, index: idx)
+            return ASTShader.Parameter(name: pn.stringValue ?? "_", kind: kind, index: idx, optional: pn.hasChildren(of: .metalFunctionConstantAttr))
         }
 
         let kind: ASTShader.Kind
@@ -264,7 +285,7 @@ public class ASTNode {
 
         let usedConstants = constants.filter { self.hasUsageOfVar(with: $0.id) }
 
-        return ASTShader(name: self.stringValue!,
+        return ASTShader(name: hostName ?? self.stringValue!,
                          kind: kind,
                          parameters: parameters,
                          customDeclarations: declarations,

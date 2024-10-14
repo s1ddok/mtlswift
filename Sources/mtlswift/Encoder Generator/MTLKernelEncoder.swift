@@ -121,6 +121,9 @@ public struct MTLKernelEncoder {
                 var parameterString = ""
                 for parameter in self.parameters {
                     parameterString += "\(parameter.name): \(parameter.swiftTypeName), "
+                    if parameter.kind == .buffer {
+                        parameterString += "\(parameter.name)Offset: Int = 0, "
+                    }
                 }
 
                 var parametersBodyString = ""
@@ -172,7 +175,7 @@ public struct MTLKernelEncoder {
                 switch parameter.kind {
                 case .buffer:
                     if parameter.swiftTypeName == "MTLBuffer" || parameter.swiftTypeName == "MTLBuffer?" {
-                        sourceBuilder.add(line: "encoder.setBuffer(\(parameter.name), offset: 0, index: \(parameter.index))")
+                        sourceBuilder.add(line: "encoder.setBuffer(\(parameter.name), offset: \(parameter.name)Offset, index: \(parameter.index))")
                     } else {
                         sourceBuilder.add(line: "encoder.setValue(\(parameter.name), at: \(parameter.index))")
                     }
